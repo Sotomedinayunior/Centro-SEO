@@ -1,27 +1,24 @@
 /**
- * api/callback.js — Recibe el código OAuth2 de Google y muestra el refresh_token
- * GET /api/callback?code=...
+ * api/callback.js
+ * GET /api/callback?code=...&state=...
  *
- * Después de autorizar en Google, esta página te muestra el refresh_token
- * para que lo copies y lo guardes como variable de entorno en Vercel.
+ * Exchanges the OAuth code for tokens, then returns an HTML page
+ * that saves the refresh_token in localStorage and redirects to the dashboard.
  */
-
 const { google } = require('googleapis');
 
 module.exports = async function handler(req, res) {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
 
   if (error) {
-    return res.status(400).send(`
-      <h2>Error de autorización</h2>
-      <p>${error}</p>
-      <a href="/api/auth">Intentar de nuevo</a>
-    `);
+    return res.status(400).send(errorPage(
+      'Google rechazó la autorización',
+      error,
+      'Asegúrate de que la pantalla de consentimiento OAuth esté configurada como <strong>External</strong> y que tu email esté en la lista de Test Users.'
+    ));
   }
 
-  if (!code) {
-    return res.redirect('/api/auth');
-  }
+  if (!code) return res.redirect('/');
 
   const host        = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
   const protocol    = host.includes('localhost') ? 'http' : 'https';
@@ -35,100 +32,83 @@ module.exports = async function handler(req, res) {
 
   try {
     const { tokens } = await auth.getToken(code);
-    auth.setCredentials(tokens);
 
-    // Try to fetch GMB account + location IDs to help with setup
-    let gmbInfo = '';
-    try {
-      const accessToken = tokens.access_token;
-      const hdrs = { Authorization: `Bearer ${accessToken}` };
-
-      const acctRes = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', { headers: hdrs });
-      const accounts = acctRes.ok ? await acctRes.json() : {};
-
-      if (accounts.accounts?.length) {
-        const acct     = accounts.accounts[0];
-        const acctName = acct.name; // e.g., accounts/123456789
-
-        const locRes = await fetch(
-          `https://mybusinessbusinessinformation.googleapis.com/v1/${acctName}/locations?readMask=name,title`,
-          { headers: hdrs }
-        );
-        const locs = locRes.ok ? await locRes.json() : {};
-
-        if (locs.locations?.length) {
-          gmbInfo = `
-            <div style="background:#e8f5e9;border-radius:8px;padding:16px;margin-top:16px">
-              <h3 style="color:#2e7d32;margin:0 0 12px">✅ Google My Business encontrado</h3>
-              <p style="margin:0 0 8px"><strong>Cuenta:</strong> ${acct.accountName || acctName}</p>
-              <p style="margin:0 0 8px"><strong>Account Name:</strong> <code>${acctName}</code></p>
-              ${locs.locations.map(l => `
-                <p style="margin:4px 0"><strong>Ubicación:</strong> ${l.title || l.name}</p>
-                <p style="margin:4px 0"><strong>GMB_LOCATION_NAME:</strong> <code style="background:#c8e6c9;padding:2px 6px;border-radius:4px">${l.name}</code></p>
-              `).join('')}
-            </div>
-          `;
-        }
-      }
-    } catch (e) {
-      gmbInfo = `<p style="color:#666;font-size:13px">No se pudo obtener datos de GMB automáticamente, pero el token es válido.</p>`;
+    if (!tokens.refresh_token) {
+      return res.status(400).send(errorPage(
+        'No se generó el refresh_token',
+        'missing_refresh_token',
+        'Revoca el acceso de la app en <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a> e intenta de nuevo. Esto suele pasar cuando ya autorizaste la app antes.'
+      ));
     }
 
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <meta charset="UTF-8">
-        <title>Setup completo — Nelly Dashboard</title>
-        <style>
-          body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; color: #1a1a1a; }
-          h1 { color: #E8610A; }
-          .token-box { background: #1a1a1a; color: #f5f5f5; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; word-break: break-all; margin: 10px 0; }
-          .step { background: #fff8f4; border-left: 4px solid #E8610A; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
-          .step h3 { margin: 0 0 8px; color: #c04f00; }
-          code { background: #f0efed; padding: 2px 6px; border-radius: 4px; }
-          .btn { display: inline-block; background: #E8610A; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 20px; font-weight: 600; }
-        </style>
-      </head>
-      <body>
-        <h1>🎉 Autorización exitosa</h1>
-        <p>Ya tienes los tokens. Guárdalos como variables de entorno en Vercel.</p>
+    // Decode site URL from state
+    let siteUrl = '';
+    try {
+      const stateObj = JSON.parse(Buffer.from(state || '', 'base64').toString());
+      siteUrl = stateObj.siteUrl || '';
+    } catch {}
 
-        <div class="step">
-          <h3>1️⃣ Copia tu GOOGLE_REFRESH_TOKEN</h3>
-          <p>Este token es permanente — solo necesitas obtenerlo una vez.</p>
-          <div class="token-box">${tokens.refresh_token || '⚠️ No se generó refresh_token — vuelve a /api/auth'}</div>
-        </div>
-
-        ${gmbInfo}
-
-        <div class="step">
-          <h3>2️⃣ Agrega estas variables en Vercel</h3>
-          <p>Ve a tu proyecto en Vercel → <strong>Settings → Environment Variables</strong> y agrega:</p>
-          <ul>
-            <li><code>GOOGLE_CLIENT_ID</code> — ya lo tienes</li>
-            <li><code>GOOGLE_CLIENT_SECRET</code> — ya lo tienes</li>
-            <li><code>GOOGLE_REFRESH_TOKEN</code> — el token de arriba</li>
-            <li><code>GSC_PROPERTY</code> → <code>https://nellyrac.do/</code></li>
-            <li><code>GMB_LOCATION_NAME</code> → el valor de arriba (accounts/.../locations/...)</li>
-          </ul>
-        </div>
-
-        <div class="step">
-          <h3>3️⃣ Redeploy</h3>
-          <p>Después de agregar las variables, haz un redeploy en Vercel para activarlas.</p>
-        </div>
-
-        <a href="/" class="btn">← Volver al dashboard</a>
-      </body>
-      </html>
-    `);
+    // Return HTML page that stores tokens in localStorage and redirects
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Conectando…</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #1a1a1a; color: #fff;
+           display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .box { text-align: center; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #E8610A;
+               border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { color: #888; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner"></div>
+    <p>Guardando credenciales…</p>
+  </div>
+  <script>
+    try {
+      localStorage.setItem('g_rt', ${JSON.stringify(tokens.refresh_token)});
+      ${siteUrl ? `localStorage.setItem('g_site', ${JSON.stringify(siteUrl)});` : ''}
+    } catch(e) {
+      console.error('localStorage error', e);
+    }
+    // Redirect to dashboard with discover step
+    window.location.href = '/?step=discover';
+  </script>
+</body>
+</html>`);
 
   } catch (err) {
-    res.status(500).send(`
-      <h2>Error al obtener tokens</h2>
-      <pre>${err.message}</pre>
-      <a href="/api/auth">Intentar de nuevo</a>
-    `);
+    return res.status(500).send(errorPage(
+      'Error al obtener tokens',
+      err.message,
+      'Verifica que el <strong>Client ID</strong> y <strong>Client Secret</strong> en Vercel sean correctos y que el redirect URI en Google Cloud sea exactamente: <code>' + redirectUri + '</code>'
+    ));
   }
 };
+
+function errorPage(title, detail, hint) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Error — Dashboard</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 60px auto; padding: 20px; color: #1a1a1a; }
+  h2 { color: #c00; }
+  .detail { background: #f5f5f5; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; color: #555; }
+  .hint { background: #fff8f4; border-left: 4px solid #E8610A; padding: 12px 16px; margin-top: 16px; border-radius: 0 6px 6px 0; font-size: 14px; }
+  a { color: #E8610A; font-weight: 600; display: inline-block; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <h2>⚠️ ${title}</h2>
+  <div class="detail">${detail}</div>
+  <div class="hint">${hint}</div>
+  <a href="/">← Volver al dashboard</a>
+</body>
+</html>`;
+}

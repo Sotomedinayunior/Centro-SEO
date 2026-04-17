@@ -199,6 +199,53 @@ html,body{overflow-x:hidden;width:100%}
 .loading-dots::after{content:'…';animation:dots 1.2s steps(3) infinite}
 @keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
 
+/* ── SETUP OVERLAY ─────────────────────────────────────────── */
+.setup-overlay{position:fixed;inset:0;background:#111;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.setup-card{background:#1e1e1e;border-radius:16px;padding:40px;width:100%;max-width:480px;border:1px solid #2a2a2a}
+.setup-logo{text-align:center;margin-bottom:32px}
+.setup-logo-text{font-family:var(--ffc);font-size:28px;font-weight:800;color:var(--orange);letter-spacing:1px}
+.setup-logo-sub{font-size:12px;color:#555;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.setup-steps{display:flex;gap:6px;margin-bottom:32px}
+.setup-step-dot{flex:1;height:3px;background:#2a2a2a;border-radius:2px;transition:background 0.3s}
+.setup-step-dot.active{background:var(--orange)}
+.setup-step-dot.done{background:#27a663}
+.setup-step{display:none}
+.setup-step.visible{display:block}
+.setup-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:8px}
+.setup-title{font-family:var(--ffc);font-size:22px;font-weight:700;color:#fff;margin-bottom:8px}
+.setup-desc{font-size:13px;color:#777;line-height:1.65;margin-bottom:24px}
+.setup-input-wrap{position:relative;margin-bottom:20px}
+.setup-input{width:100%;padding:13px 16px 13px 48px;font-size:14px;font-family:var(--ff);background:#2a2a2a;border:1px solid #333;border-radius:10px;color:#fff;outline:none;transition:border-color 0.2s}
+.setup-input:focus{border-color:var(--orange)}
+.setup-input::placeholder{color:#555}
+.setup-input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#555;font-size:18px;pointer-events:none}
+.setup-preview{display:none;align-items:center;gap:12px;background:#252525;border-radius:10px;padding:12px 14px;margin-bottom:20px}
+.setup-preview.visible{display:flex}
+.setup-favicon{width:32px;height:32px;border-radius:6px;object-fit:contain;background:#333;flex-shrink:0}
+.setup-site-name{font-weight:600;color:#fff;font-size:14px}
+.setup-site-url{font-size:11px;color:#666;margin-top:2px}
+.setup-btn{width:100%;padding:13px;background:var(--orange);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:var(--ff);cursor:pointer;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.setup-btn:hover{background:var(--orange-dark)}
+.setup-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+.setup-btn-secondary{background:transparent;border:1px solid #333;color:#777;margin-top:10px}
+.setup-btn-secondary:hover{border-color:#555;color:#aaa;background:transparent}
+.setup-error{background:#2a1515;border:1px solid #5c1a1a;border-radius:8px;padding:12px 14px;font-size:12px;color:#f87171;margin-bottom:16px;display:none}
+.setup-error.visible{display:block}
+.setup-property-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:220px;overflow-y:auto}
+.setup-property-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#252525;border-radius:8px;border:1px solid #333;cursor:pointer;transition:border-color 0.15s}
+.setup-property-item:hover{border-color:var(--orange)}
+.setup-property-item.selected{border-color:var(--orange);background:rgba(232,97,10,0.08)}
+.spi-icon{font-size:16px;flex-shrink:0}
+.spi-url{font-size:13px;color:#ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spi-badge{font-size:10px;color:#666;margin-top:2px}
+.setup-section-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#555;margin:16px 0 8px}
+.setup-skip{font-size:12px;color:#555;text-align:center;margin-top:12px;cursor:pointer}
+.setup-skip:hover{color:#888}
+.setup-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+/* Reset button in sidebar */
+.sidebar-reset{font-size:10px;color:#444;cursor:pointer;margin-top:8px;display:block}
+.sidebar-reset:hover{color:#E8610A}
+
 @media(max-width:1200px){
   .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -220,7 +267,90 @@ html,body{overflow-x:hidden;width:100%}
 </style>
 </head>
 <body>
-<div class="app">
+<!-- =========== SETUP OVERLAY =========== -->
+<div id="setup-overlay" class="setup-overlay" style="display:none">
+  <div class="setup-card">
+
+    <div class="setup-logo">
+      <div class="setup-logo-text">Growth Dashboard</div>
+      <div class="setup-logo-sub">Powered by Google APIs</div>
+    </div>
+
+    <!-- Step dots -->
+    <div class="setup-steps">
+      <div class="setup-step-dot active" id="dot-1"></div>
+      <div class="setup-step-dot" id="dot-2"></div>
+      <div class="setup-step-dot" id="dot-3"></div>
+    </div>
+
+    <div id="setup-error" class="setup-error"></div>
+
+    <!-- STEP 1: URL del sitio -->
+    <div id="step-1" class="setup-step visible">
+      <div class="setup-label">Paso 1 de 3</div>
+      <div class="setup-title">¿Cuál es tu sitio web?</div>
+      <div class="setup-desc">Ingresa la URL de tu sitio. El dashboard cargará el logo, nombre y datos de Google Search Console y Google My Business automáticamente.</div>
+      <div class="setup-input-wrap">
+        <span class="setup-input-icon">🌐</span>
+        <input type="url" id="setup-url-input" class="setup-input" placeholder="https://dualsym.com" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div id="setup-preview" class="setup-preview">
+        <img id="setup-favicon" class="setup-favicon" src="" alt="">
+        <div>
+          <div class="setup-site-name" id="setup-site-name-preview">—</div>
+          <div class="setup-site-url" id="setup-site-url-preview">—</div>
+        </div>
+      </div>
+      <button class="setup-btn" id="btn-step1" onclick="goStep2()">
+        Continuar →
+      </button>
+    </div>
+
+    <!-- STEP 2: Conectar Google -->
+    <div id="step-2" class="setup-step">
+      <div class="setup-label">Paso 2 de 3</div>
+      <div class="setup-title">Conecta tu cuenta Google</div>
+      <div class="setup-desc">Autoriza el acceso a Google Search Console y Google My Business. Solo necesitas hacerlo una vez — tus credenciales quedan guardadas en este navegador.</div>
+      <div id="setup-preview-2" class="setup-preview" style="margin-bottom:20px">
+        <img id="setup-favicon-2" class="setup-favicon" src="" alt="">
+        <div>
+          <div class="setup-site-name" id="setup-site-name-2">—</div>
+          <div class="setup-site-url" id="setup-site-url-2">—</div>
+        </div>
+      </div>
+      <button class="setup-btn" id="btn-connect-google" onclick="connectGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+        Conectar con Google
+      </button>
+      <button class="setup-btn setup-btn-secondary" onclick="goStep1()">← Cambiar sitio</button>
+    </div>
+
+    <!-- STEP 3: Confirmar propiedades -->
+    <div id="step-3" class="setup-step">
+      <div class="setup-label">Paso 3 de 3</div>
+      <div class="setup-title">Confirma tus propiedades</div>
+      <div class="setup-desc">Selecciona la propiedad de Search Console que corresponde a tu sitio.</div>
+
+      <div class="setup-section-label">Google Search Console</div>
+      <div id="gsc-list" class="setup-property-list">
+        <div style="color:#555;font-size:13px;padding:10px">Cargando propiedades…</div>
+      </div>
+
+      <div id="gmb-section" style="display:none">
+        <div class="setup-section-label">Google My Business (opcional)</div>
+        <div id="gmb-list" class="setup-property-list"></div>
+      </div>
+
+      <button class="setup-btn" id="btn-finish" onclick="finishSetup()" disabled>
+        Comenzar →
+      </button>
+      <div class="setup-skip" onclick="skipGMB()">Omitir Google My Business por ahora</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="app" id="app-main" style="display:none">
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -273,6 +403,7 @@ html,body{overflow-x:hidden;width:100%}
     <div class="sidebar-period" id="sidebar-status">
       <strong>Cargando…</strong>
     </div>
+    <span class="sidebar-reset" onclick="resetSetup()">⟳ Cambiar sitio / reconectar</span>
   </div>
 </aside>
 
@@ -807,8 +938,15 @@ html,body{overflow-x:hidden;width:100%}
 <script>
 const O='#E8610A',OL='#F9A36A',DK='#3A3A3A',BL='#378ADD',GR='#27a663',MU='#999',BG='rgba(232,97,10,0.08)';
 
-// ── Site config (loaded from /api/config) ─────────────────────────────────────
+// ── Local storage keys ────────────────────────────────────────────────────────
+const LS = { rt:'g_rt', site:'g_site', gsc:'g_gsc', gmb:'g_gmb', name:'g_name' };
+const ls = { get: k => localStorage.getItem(k), set: (k,v) => localStorage.setItem(k,v), del: k => localStorage.removeItem(k) };
+
+// ── Site config (derived from localStorage) ───────────────────────────────────
 let SITE_CONFIG = { siteName: '—', siteUrl: '', gscProperty: '', configured: false, gmbConfigured: false };
+
+// ── Setup state ───────────────────────────────────────────────────────────────
+let selectedGSC = null, selectedGMB = null;
 
 // ── Fallback static data (shown while API is not yet configured) ──────────────
 const FALLBACK = {
@@ -820,58 +958,143 @@ const FALLBACK = {
   chart:[], queries:[], pages:[], countries:[], devices:[],
 };
 
-// ── Load site config from /api/config ────────────────────────────────────────
-async function loadConfig() {
+// ── Derive site name from URL ─────────────────────────────────────────────────
+function nameFromUrl(url) {
   try {
-    const r = await fetch('/api/config');
-    if (!r.ok) throw new Error('no config');
-    return await r.json();
-  } catch {
-    return { siteName: 'Mi Sitio', siteUrl: '', gscProperty: '', configured: false, gmbConfigured: false };
-  }
+    return new URL(url).hostname.replace(/^www\./,'').split('.')[0]
+      .replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  } catch { return 'Mi Sitio'; }
 }
 
-// ── Apply config to the UI ────────────────────────────────────────────────────
-function applyConfig(cfg) {
-  SITE_CONFIG = cfg;
-  const name = cfg.siteName || 'Mi Sitio';
-  const url  = cfg.siteUrl  || cfg.gscProperty || '';
+// ── Show / hide setup overlay ─────────────────────────────────────────────────
+function showSetup() { document.getElementById('setup-overlay').style.display='flex'; document.getElementById('app-main').style.display='none'; }
+function showApp()   { document.getElementById('setup-overlay').style.display='none'; document.getElementById('app-main').style.display='flex'; }
 
-  // Logo + title
-  el('logo-site-name', name.length > 10 ? name.slice(0,10) : name);
-  document.getElementById('page-title').textContent = name + ' — Growth Dashboard';
+// ── Setup Step navigation ─────────────────────────────────────────────────────
+function goStep1() {
+  ['step-1','step-2','step-3'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  document.getElementById('step-1').classList.add('visible');
+  ['dot-1','dot-2','dot-3'].forEach(id=>document.getElementById(id).className='setup-step-dot');
+  document.getElementById('dot-1').classList.add('active');
+}
+function goStep2() {
+  const raw = document.getElementById('setup-url-input').value.trim();
+  const url = raw.startsWith('http') ? raw : 'https://'+raw;
+  try { new URL(url); } catch { return showSetupError('URL inválida. Ej: https://dualsym.com'); }
+  clearSetupError(); ls.set(LS.site, url);
+  ['step-1','step-2','step-3'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  document.getElementById('step-2').classList.add('visible');
+  document.getElementById('dot-1').className='setup-step-dot done';
+  document.getElementById('dot-2').className='setup-step-dot active';
+  const name=nameFromUrl(url), domain=new URL(url).hostname;
+  const fav=`https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  el('setup-site-name-2',name); el('setup-site-url-2',domain);
+  const f2=document.getElementById('setup-favicon-2'); if(f2) f2.src=fav;
+  document.getElementById('setup-preview-2').classList.add('visible');
+}
+function connectGoogle() {
+  const url=ls.get(LS.site)||'';
+  window.location.href='/api/auth?site='+encodeURIComponent(url);
+}
+async function runDiscoverStep() {
+  const rt=ls.get(LS.rt); if(!rt){goStep1();return;}
+  ['step-1','step-2','step-3'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  document.getElementById('step-3').classList.add('visible');
+  document.getElementById('dot-1').className='setup-step-dot done';
+  document.getElementById('dot-2').className='setup-step-dot done';
+  document.getElementById('dot-3').className='setup-step-dot active';
+  try {
+    const r=await fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:rt})});
+    const data=await r.json(); if(!r.ok) throw new Error(data.error||'Error');
+    buildGSCList(data.gscProperties||[]); buildGMBList(data.gmbLocations||[]);
+  } catch(e) { showSetupError('Error al descubrir propiedades: '+e.message); }
+}
+function buildGSCList(props) {
+  const siteUrl=ls.get(LS.site)||'', c=document.getElementById('gsc-list');
+  if(!props.length){c.innerHTML='<div style="color:#f87171;font-size:13px;padding:10px">No se encontraron propiedades en Search Console.</div>';return;}
+  c.innerHTML=''; let auto=false;
+  props.forEach(p=>{
+    const item=document.createElement('div'); item.className='setup-property-item'; item.dataset.url=p.url;
+    const host=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch{return u}};
+    const match=siteUrl&&(host(p.url)===host(siteUrl)||host(siteUrl)===host(p.url)||p.url.includes(host(siteUrl))||siteUrl.includes(host(p.url)));
+    if(match&&!auto){item.classList.add('selected');selectedGSC=p.url;auto=true;document.getElementById('btn-finish').disabled=false;}
+    item.innerHTML=`<span class="spi-icon">🔍</span><div><div class="spi-url">${p.url}</div><div class="spi-badge">${p.permissionLevel||'FULL'}</div></div>`;
+    item.onclick=()=>{c.querySelectorAll('.setup-property-item').forEach(i=>i.classList.remove('selected'));item.classList.add('selected');selectedGSC=p.url;document.getElementById('btn-finish').disabled=false;};
+    c.appendChild(item);
+  });
+}
+function buildGMBList(locs) {
+  const sec=document.getElementById('gmb-section'), c=document.getElementById('gmb-list');
+  if(!locs.length){sec.style.display='none';return;}
+  sec.style.display='block'; c.innerHTML='';
+  const none=document.createElement('div'); none.className='setup-property-item selected';
+  none.innerHTML=`<span class="spi-icon">➖</span><div><div class="spi-url">No conectar GMB ahora</div></div>`;
+  none.onclick=()=>{c.querySelectorAll('.setup-property-item').forEach(i=>i.classList.remove('selected'));none.classList.add('selected');selectedGMB=null;};
+  c.appendChild(none);
+  locs.forEach(loc=>{
+    const item=document.createElement('div'); item.className='setup-property-item'; item.dataset.name=loc.name;
+    item.innerHTML=`<span class="spi-icon">📍</span><div><div class="spi-url">${loc.title}</div><div class="spi-badge">${loc.websiteUri||loc.name}</div></div>`;
+    item.onclick=()=>{c.querySelectorAll('.setup-property-item').forEach(i=>i.classList.remove('selected'));item.classList.add('selected');selectedGMB=loc.name;};
+    c.appendChild(item);
+  });
+}
+function skipGMB(){selectedGMB=null;finishSetup();}
+function finishSetup(){
+  if(!selectedGSC){showSetupError('Selecciona una propiedad de Search Console');return;}
+  ls.set(LS.gsc,selectedGSC); if(selectedGMB) ls.set(LS.gmb,selectedGMB); else ls.del(LS.gmb);
+  ls.set(LS.name,nameFromUrl(ls.get(LS.site)||selectedGSC));
+  history.replaceState({},'','/'); bootDashboard();
+}
+function resetSetup(){[LS.rt,LS.site,LS.gsc,LS.gmb,LS.name].forEach(k=>ls.del(k));window.location.reload();}
+function showSetupError(msg){const e=document.getElementById('setup-error');if(e){e.textContent=msg;e.classList.add('visible');}}
+function clearSetupError(){const e=document.getElementById('setup-error');if(e)e.classList.remove('visible');}
 
-  // Overview badge
-  const badge = document.getElementById('overview-badge');
-  if (badge) {
-    badge.textContent = cfg.configured ? '● Datos en vivo' : '● Modo demo — configura tus tokens';
-    badge.style.color = cfg.configured ? '#27a663' : '#999';
-  }
-
-  // Sidebar
-  const sb = document.getElementById('sidebar-status');
-  if (sb) {
-    sb.innerHTML = `<strong>${name}</strong>${url ? url.replace(/^https?:\/\//,'') : ''}`;
-  }
+// ── URL input preview (step 1) ────────────────────────────────────────────────
+function initURLInput() {
+  const input=document.getElementById('setup-url-input'), preview=document.getElementById('setup-preview');
+  if(!input) return;
+  input.addEventListener('input',()=>{
+    const raw=input.value.trim(); if(!raw){preview.classList.remove('visible');return;}
+    const url=raw.startsWith('http')?raw:'https://'+raw;
+    try{
+      const domain=new URL(url).hostname, name=nameFromUrl(url);
+      el('setup-site-name-preview',name); el('setup-site-url-preview',domain);
+      const img=document.getElementById('setup-favicon'); if(img) img.src=`https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+      preview.classList.add('visible');
+    }catch{preview.classList.remove('visible');}
+  });
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')goStep2();});
+  const stored=ls.get(LS.site); if(stored){input.value=stored;input.dispatchEvent(new Event('input'));}
 }
 
-// ── Load data from /api/data (Vercel) or fall back to FALLBACK ───────────────
+// ── Apply stored config to dashboard UI ───────────────────────────────────────
+function applyStoredConfig() {
+  const name=ls.get(LS.name)||nameFromUrl(ls.get(LS.site)||'');
+  const site=ls.get(LS.site)||'', gsc=ls.get(LS.gsc)||'';
+  SITE_CONFIG={siteName:name,siteUrl:site,gscProperty:gsc,configured:true,gmbConfigured:!!ls.get(LS.gmb)};
+  el('logo-site-name',name.length>10?name.slice(0,10):name);
+  document.getElementById('page-title').textContent=name+' — Growth Dashboard';
+  const badge=document.getElementById('overview-badge');
+  if(badge){badge.textContent='● Datos en vivo';badge.style.color='#27a663';}
+  const sb=document.getElementById('sidebar-status');
+  if(sb) sb.innerHTML=`<strong>${name}</strong>${site?site.replace(/^https?:\/\//,''):gsc}`;
+  if(site){try{
+    const domain=new URL(site).hostname;
+    const svg=document.querySelector('.logo-wrap svg');
+    if(svg){const img=document.createElement('img');img.src=`https://www.google.com/s2/favicons?domain=${domain}&sz=64`;img.style.cssText='width:32px;height:32px;border-radius:6px;object-fit:contain';img.onerror=()=>img.remove();svg.replaceWith(img);}
+  }catch{}}
+}
+
+// ── Load data via POST /api/data ──────────────────────────────────────────────
 async function loadData() {
-  try {
-    const r = await fetch('/api/data?t=' + Date.now());
-    if (!r.ok) throw new Error('API error ' + r.status);
-    const data = await r.json();
-    if (!data.summary_6m) throw new Error('datos incompletos');
-    return data;
-  } catch(e) {
-    console.warn('/api/data no disponible — mostrando estado vacío:', e.message);
-    return {
-      ...FALLBACK,
-      gmb: { configured: false, rating: null, reviewCount: null, reviews: [],
-             performance: { views: { maps: null, search: null, total: null },
-                            actions: { calls: null, websiteClicks: null, directions: null, total: null }, daily: [] } }
-    };
-  }
+  const rt=ls.get(LS.rt), gsc=ls.get(LS.gsc), gmb=ls.get(LS.gmb)||null;
+  const empty={...FALLBACK,gmb:{configured:false,rating:null,reviewCount:null,reviews:[],performance:{views:{maps:null,search:null,total:null},actions:{calls:null,websiteClicks:null,directions:null,total:null},daily:[]}}};
+  if(!rt||!gsc) return empty;
+  try{
+    const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:rt,gscProperty:gsc,gmbLocation:gmb})});
+    if(!r.ok){const e=await r.json();throw new Error(e.error||r.status);}
+    return await r.json();
+  }catch(e){console.error('Error cargando datos:',e.message);return empty;}
 }
 
 // ── Helper: classify query type ───────────────────────────────────────────────
@@ -1502,12 +1725,37 @@ function renderGMB(G) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-Promise.all([loadConfig(), loadData()]).then(([cfg, D]) => {
-  applyConfig(cfg);
+async function bootDashboard() {
+  applyStoredConfig();
+  showApp();
+  const D = await loadData();
   render(D);
   renderGMB(D.gmb || null);
   renderHistory();
-});
+}
+
+(async function init() {
+  initURLInput();
+  const step = new URLSearchParams(location.search).get('step');
+  const rt   = ls.get(LS.rt);
+  const gsc  = ls.get(LS.gsc);
+
+  if (step === 'discover' && rt) {
+    // Returning from OAuth — show setup step 3
+    showSetup();
+    await runDiscoverStep();
+  } else if (rt && gsc) {
+    // Already configured — go straight to dashboard
+    bootDashboard();
+  } else {
+    // First time — show setup
+    showSetup();
+    if (rt && !gsc) {
+      // Has token but no property selected yet
+      await runDiscoverStep();
+    }
+  }
+})();
 </script>
 </body>
 </html>
