@@ -273,6 +273,19 @@ html,body{overflow-x:hidden;width:100%}
 .rf-count{font-size:10px;opacity:0.8;margin-left:3px;font-weight:600}
 .rf-tab.active .rf-count{opacity:1}
 
+/* ── PERIOD BUTTONS ──────────────────────────────────────────── */
+.period-btn{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--ff)}
+.period-btn:hover{border-color:var(--orange);color:var(--orange)}
+.period-btn.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+/* ── GA4 BAR ROWS ─────────────────────────────────────────────── */
+.ga4-bar-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.ga4-bar-row:last-child{border-bottom:none}
+.ga4-bar-label{min-width:90px;color:var(--text);font-weight:500}
+.ga4-bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.ga4-bar-fill{height:100%;background:var(--orange);border-radius:3px;transition:width 0.5s}
+.ga4-bar-val{min-width:50px;text-align:right;color:var(--text2);font-weight:600}
+
 /* ── PERIOD COMPARISON TABLE ──────────────────────────────────── */
 .comparison-table{width:100%;border-collapse:collapse;font-size:12px}
 .comparison-table th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);padding:7px 10px;border-bottom:2px solid var(--border);text-align:right;white-space:nowrap}
@@ -384,6 +397,11 @@ html,body{overflow-x:hidden;width:100%}
         <div id="gmb-list" class="setup-property-list"></div>
       </div>
 
+      <div id="ga4-section" style="display:none">
+        <div class="setup-section-label">Google Analytics 4 (opcional)</div>
+        <div id="ga4-list" class="setup-property-list"></div>
+      </div>
+
       <button class="setup-btn" id="btn-finish" onclick="finishSetup()" disabled>
         Comenzar →
       </button>
@@ -426,6 +444,10 @@ html,body{overflow-x:hidden;width:100%}
     <div class="nav-item" onclick="showPage('gmb',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z"/><circle cx="8" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>
       Google Mi Negocio
+    </div>
+    <div class="nav-item" onclick="showPage('analytics',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 12h2V7H1v5zm4 0h2V4H5v8zm4 0h2V9H9v3zm4 0h2V2h-2v10z"/></svg>
+      Analytics
     </div>
     <div class="nav-label">Estrategia</div>
     <div class="nav-item" onclick="showPage('experiments',this)">
@@ -942,6 +964,111 @@ html,body{overflow-x:hidden;width:100%}
   </div>
 </div>
 
+<!-- =========== PAGE: ANALYTICS =========== -->
+<div id="page-analytics" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Analytics</div>
+      <div class="page-sub">Google Analytics 4 · Últimos 6 meses</div>
+    </div>
+    <div class="header-badge" id="ga4-badge">● Cargando…</div>
+  </div>
+
+  <!-- Not configured banner -->
+  <div id="ga4-not-configured" style="display:none">
+    <div class="alert-banner" style="border:1px solid rgba(232,97,10,0.3);margin-bottom:20px">
+      <span class="alert-icon">⚙️</span>
+      <div style="flex:1">
+        <div class="alert-title">Google Analytics no está configurado</div>
+        <div style="font-size:12px;color:#aaa;margin-top:6px;line-height:1.7">
+          Reconecta con Google y selecciona tu propiedad de GA4 en el Paso 3.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+    <div class="kpi-card">
+      <div class="kpi-label">Sesiones</div>
+      <div class="kpi-value" id="ga4-kpi-sessions">—</div>
+      <div class="kpi-sub">últimos 6 meses</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Usuarios</div>
+      <div class="kpi-value" id="ga4-kpi-users">—</div>
+      <div class="kpi-sub">usuarios totales</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Nuevos Usuarios</div>
+      <div class="kpi-value" id="ga4-kpi-newusers">—</div>
+      <div class="kpi-sub">primera visita</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Engagement Rate</div>
+      <div class="kpi-value" id="ga4-kpi-engagement">—</div>
+      <div class="kpi-sub">sesiones activas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Páginas Vistas</div>
+      <div class="kpi-value" id="ga4-kpi-pageviews">—</div>
+      <div class="kpi-sub">vistas totales</div>
+    </div>
+  </div>
+
+  <!-- Gráfica de sesiones + Fuentes de tráfico -->
+  <div class="grid-65" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header-flex">
+        <div class="card-title">Sesiones — Tendencia</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="ga4ChartPeriod('7d',this)" class="period-btn active" id="ga4-btn-7d">7d</button>
+          <button onclick="ga4ChartPeriod('28d',this)" class="period-btn" id="ga4-btn-28d">28d</button>
+          <button onclick="ga4ChartPeriod('6m',this)" class="period-btn" id="ga4-btn-6m">6m</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="ga4SessionsChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fuentes de Tráfico</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="ga4ChannelsChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Dispositivos + Países -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">Dispositivos</div>
+      <div id="ga4-devices-list" style="margin-top:4px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Países</div>
+      <div id="ga4-countries-list" style="margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- Top Páginas -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Top Páginas</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px" id="ga4-pages-table">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:8px 6px;color:var(--text2);font-weight:600">Página</th>
+            <th style="text-align:right;padding:8px 6px;color:var(--text2);font-weight:600">Vistas</th>
+            <th style="text-align:right;padding:8px 6px;color:var(--text2);font-weight:600">Sesiones</th>
+            <th style="text-align:right;padding:8px 6px;color:var(--text2);font-weight:600">Duración avg</th>
+            <th style="text-align:right;padding:8px 6px;color:var(--text2);font-weight:600">Engagement</th>
+          </tr>
+        </thead>
+        <tbody id="ga4-pages-body">
+          <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 </main>
 </div>
 
@@ -949,14 +1076,14 @@ html,body{overflow-x:hidden;width:100%}
 const O='#E8610A',OL='#F9A36A',DK='#3A3A3A',BL='#378ADD',GR='#27a663',MU='#999',BG='rgba(232,97,10,0.08)';
 
 // ── Local storage keys ────────────────────────────────────────────────────────
-const LS = { rt:'g_rt', site:'g_site', gsc:'g_gsc', gmb:'g_gmb', name:'g_name' };
+const LS = { rt:'g_rt', site:'g_site', gsc:'g_gsc', gmb:'g_gmb', name:'g_name', ga4:'g_ga4' };
 const ls = { get: k => localStorage.getItem(k), set: (k,v) => localStorage.setItem(k,v), del: k => localStorage.removeItem(k) };
 
 // ── Site config (derived from localStorage) ───────────────────────────────────
 let SITE_CONFIG = { siteName: '—', siteUrl: '', gscProperty: '', configured: false, gmbConfigured: false };
 
 // ── Setup state ───────────────────────────────────────────────────────────────
-let selectedGSC = null, selectedGMB = null;
+let selectedGSC = null, selectedGMB = null, selectedGA4 = null;
 
 // ── Fallback static data (shown while API is not yet configured) ──────────────
 const FALLBACK = {
@@ -1016,7 +1143,7 @@ async function runDiscoverStep() {
   try {
     const r=await fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:rt})});
     const data=await r.json(); if(!r.ok) throw new Error(data.error||'Error');
-    buildGSCList(data.gscProperties||[]); buildGMBList(data.gmbLocations||[]);
+    buildGSCList(data.gscProperties||[]); buildGMBList(data.gmbLocations||[]); buildGA4List(data.ga4Properties||[]);
   } catch(e) { showSetupError('Error al descubrir propiedades: '+e.message); }
 }
 function buildGSCList(props) {
@@ -1048,14 +1175,34 @@ function buildGMBList(locs) {
     c.appendChild(item);
   });
 }
+function buildGA4List(props) {
+  const sec=document.getElementById('ga4-section'), c=document.getElementById('ga4-list');
+  if(!sec||!c) return;
+  if(!props.length){sec.style.display='none';return;}
+  sec.style.display='block'; c.innerHTML='';
+  const none=document.createElement('div'); none.className='setup-property-item selected';
+  none.innerHTML=`<span class="spi-icon">➖</span><div><div class="spi-url">No conectar Analytics ahora</div></div>`;
+  none.onclick=()=>{c.querySelectorAll('.setup-property-item').forEach(i=>i.classList.remove('selected'));none.classList.add('selected');selectedGA4=null;};
+  c.appendChild(none);
+  // Auto-select first property
+  let auto=false;
+  props.forEach(p=>{
+    const item=document.createElement('div'); item.className='setup-property-item'; item.dataset.name=p.name;
+    if(!auto){item.classList.add('selected');none.classList.remove('selected');selectedGA4=p.name;auto=true;}
+    item.innerHTML=`<span class="spi-icon">📊</span><div><div class="spi-url">${p.displayName||p.name}</div><div class="spi-badge">${p.websiteUrl||p.name}</div></div>`;
+    item.onclick=()=>{c.querySelectorAll('.setup-property-item').forEach(i=>i.classList.remove('selected'));item.classList.add('selected');selectedGA4=p.name;};
+    c.appendChild(item);
+  });
+}
 function skipGMB(){selectedGMB=null;finishSetup();}
 function finishSetup(){
   if(!selectedGSC){showSetupError('Selecciona una propiedad de Search Console');return;}
   ls.set(LS.gsc,selectedGSC); if(selectedGMB) ls.set(LS.gmb,selectedGMB); else ls.del(LS.gmb);
+  if(selectedGA4) ls.set(LS.ga4,selectedGA4); else ls.del(LS.ga4);
   ls.set(LS.name,nameFromUrl(ls.get(LS.site)||selectedGSC));
   history.replaceState({},'','/'); bootDashboard();
 }
-function resetSetup(){[LS.rt,LS.site,LS.gsc,LS.gmb,LS.name].forEach(k=>ls.del(k));window.location.reload();}
+function resetSetup(){[LS.rt,LS.site,LS.gsc,LS.gmb,LS.name,LS.ga4].forEach(k=>ls.del(k));window.location.reload();}
 function showSetupError(msg){const e=document.getElementById('setup-error');if(e){e.textContent=msg;e.classList.add('visible');}}
 function clearSetupError(){const e=document.getElementById('setup-error');if(e)e.classList.remove('visible');}
 
@@ -1097,11 +1244,11 @@ function applyStoredConfig() {
 
 // ── Load data via POST /api/data ──────────────────────────────────────────────
 async function loadData() {
-  const rt=ls.get(LS.rt), gsc=ls.get(LS.gsc), gmb=ls.get(LS.gmb)||null;
-  const empty={...FALLBACK,gmb:{configured:false,rating:null,reviewCount:null,reviews:[],performance:{views:{maps:null,search:null,total:null},actions:{calls:null,websiteClicks:null,directions:null,total:null},daily:[]}}};
+  const rt=ls.get(LS.rt), gsc=ls.get(LS.gsc), gmb=ls.get(LS.gmb)||null, ga4=ls.get(LS.ga4)||null;
+  const empty={...FALLBACK,gmb:{configured:false,rating:null,reviewCount:null,reviews:[],performance:{views:{maps:null,search:null,total:null},actions:{calls:null,websiteClicks:null,directions:null,total:null},daily:[]}},ga4:null};
   if(!rt||!gsc) return empty;
   try{
-    const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:rt,gscProperty:gsc,gmbLocation:gmb})});
+    const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:rt,gscProperty:gsc,gmbLocation:gmb,ga4Property:ga4})});
     if(!r.ok){const e=await r.json();throw new Error(e.error||r.status);}
     return await r.json();
   }catch(e){console.error('Error cargando datos:',e.message);return empty;}
@@ -1914,6 +2061,128 @@ function renderGMB(G) {
   renderReviewsList(reviews);
 }
 
+// ── GA4 chart state ───────────────────────────────────────────────────────────
+let GA4_DATA = null;
+let ga4SessionsChartInst = null;
+
+function ga4ChartPeriod(period, btn) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (!GA4_DATA) return;
+  const dataMap = { '7d': GA4_DATA.daily7d, '28d': GA4_DATA.daily28d, '6m': GA4_DATA.daily6m };
+  const rows = dataMap[period] || [];
+  if (ga4SessionsChartInst) {
+    ga4SessionsChartInst.data.labels = rows.map(r => {
+      const d = r.date; return d.slice(5,7)+'/'+d.slice(6,8);
+    });
+    ga4SessionsChartInst.data.datasets[0].data = rows.map(r => r.sessions);
+    ga4SessionsChartInst.update();
+  }
+}
+
+function renderGA4(G) {
+  const notConf = document.getElementById('ga4-not-configured');
+  const badge   = document.getElementById('ga4-badge');
+  if (!G || !G.configured) {
+    if (notConf) notConf.style.display = 'block';
+    if (badge) { badge.textContent = '⚙ No configurado'; badge.style.color = '#888'; }
+    return;
+  }
+  if (notConf) notConf.style.display = 'none';
+  if (badge) { badge.textContent = '● En vivo'; badge.style.color = '#27a663'; }
+
+  GA4_DATA = G;
+  const S = G.summary || {};
+  const fmt = n => n >= 1000000 ? (n/1000000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n||0);
+
+  el('ga4-kpi-sessions',    fmt(S.sessions));
+  el('ga4-kpi-users',       fmt(S.users));
+  el('ga4-kpi-newusers',    fmt(S.newUsers));
+  el('ga4-kpi-engagement',  (S.engagementRate||0)+'%');
+  el('ga4-kpi-pageviews',   fmt(S.pageViews));
+
+  // Sessions chart (default 7d)
+  const rows7d = G.daily7d || [];
+  ga4SessionsChartInst = mkChart('ga4SessionsChart', {
+    type: 'line',
+    data: {
+      labels: rows7d.map(r => r.date.slice(5,7)+'/'+r.date.slice(6,8)),
+      datasets: [{
+        label: 'Sesiones', data: rows7d.map(r => r.sessions),
+        borderColor: O, backgroundColor: BG, borderWidth: 2,
+        fill: true, tension: 0.4, pointRadius: 2,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: MU, maxTicksLimit: 10 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, color: MU }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      },
+    },
+  });
+
+  // Channels donut
+  const channels = G.channels || [];
+  const chColors = [O, BL, GR, OL, '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#2ecc71', '#e67e22'];
+  mkChart('ga4ChannelsChart', {
+    type: 'doughnut',
+    data: {
+      labels: channels.map(c => c.channel),
+      datasets: [{ data: channels.map(c => c.sessions), backgroundColor: chColors, borderWidth: 0, cutout: '55%' }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: MU, padding: 10, boxWidth: 10 } } },
+    },
+  });
+
+  // Devices bar rows
+  const devices = G.devices || [];
+  const devContainer = document.getElementById('ga4-devices-list');
+  if (devContainer && devices.length) {
+    const maxDev = Math.max(...devices.map(d => d.sessions), 1);
+    devContainer.innerHTML = devices.map(d => `
+      <div class="ga4-bar-row">
+        <div class="ga4-bar-label">${d.device}</div>
+        <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(d.sessions/maxDev*100)}%"></div></div>
+        <div class="ga4-bar-val">${fmt(d.sessions)}</div>
+      </div>`).join('');
+  }
+
+  // Countries bar rows
+  const countries = (G.countries || []).slice(0, 10);
+  const ctryContainer = document.getElementById('ga4-countries-list');
+  if (ctryContainer && countries.length) {
+    const maxC = Math.max(...countries.map(c => c.sessions), 1);
+    ctryContainer.innerHTML = countries.map(c => `
+      <div class="ga4-bar-row">
+        <div class="ga4-bar-label" style="min-width:110px">${c.country}</div>
+        <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(c.sessions/maxC*100)}%"></div></div>
+        <div class="ga4-bar-val">${fmt(c.sessions)}</div>
+      </div>`).join('');
+  }
+
+  // Top pages table
+  const pages = (G.pages || []).slice(0, 15);
+  const tbody = document.getElementById('ga4-pages-body');
+  if (tbody) {
+    tbody.innerHTML = pages.length ? pages.map(p => {
+      const dur = p.avgDuration >= 60
+        ? Math.floor(p.avgDuration/60)+'m '+String(p.avgDuration%60).padStart(2,'0')+'s'
+        : p.avgDuration+'s';
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 6px;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.page}</td>
+        <td style="padding:8px 6px;text-align:right;font-weight:600">${fmt(p.pageViews)}</td>
+        <td style="padding:8px 6px;text-align:right">${fmt(p.sessions)}</td>
+        <td style="padding:8px 6px;text-align:right;color:var(--text2)">${dur}</td>
+        <td style="padding:8px 6px;text-align:right;color:${p.engagementRate>=50?GR:'var(--text2)'}">${p.engagementRate}%</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Sin datos de páginas</td></tr>';
+  }
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function bootDashboard() {
   applyStoredConfig();
@@ -1921,6 +2190,7 @@ async function bootDashboard() {
   const D = await loadData();
   render(D);
   renderGMB(D.gmb || null);
+  renderGA4(D.ga4 || null);
 }
 
 (async function init() {

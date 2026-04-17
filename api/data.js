@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET no configurados en Vercel' });
   }
 
-  const { refreshToken, gscProperty, gmbLocation } = req.body || {};
+  const { refreshToken, gscProperty, gmbLocation, ga4Property } = req.body || {};
 
   if (!refreshToken) return res.status(400).json({ error: 'refreshToken requerido' });
   if (!gscProperty)  return res.status(400).json({ error: 'gscProperty requerido' });
@@ -30,15 +30,17 @@ module.exports = async function handler(req, res) {
   );
   auth.setCredentials({ refresh_token: refreshToken });
 
-  const [gsc, gmb] = await Promise.allSettled([
+  const [gsc, gmb, ga4] = await Promise.allSettled([
     fetchGSC(auth, gscProperty),
     gmbLocation ? fetchGMB(auth, gmbLocation) : Promise.resolve(EMPTY_GMB),
+    ga4Property ? fetchGA4(auth, ga4Property) : Promise.resolve(null),
   ]);
 
   const gscData = gsc.status === 'fulfilled' ? gsc.value : { error: gsc.reason?.message };
   const gmbData = gmb.status === 'fulfilled' ? gmb.value : { ...EMPTY_GMB, error: gmb.reason?.message };
+  const ga4Data = ga4.status === 'fulfilled' ? ga4.value : { error: ga4.reason?.message };
 
-  return res.status(200).json({ ...gscData, gmb: gmbData });
+  return res.status(200).json({ ...gscData, gmb: gmbData, ga4: ga4Data });
 };
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -111,6 +113,161 @@ async function fetchGSC(auth, property) {
     pages:     fmt(pages,    ['page']),
     countries: fmt(countries,['country']),
     devices:   fmt(devices,  ['device']),
+  };
+}
+
+// ── GA4 ───────────────────────────────────────────────────────────────────────
+async function fetchGA4(auth, propertyId) {
+  const { token } = await auth.getAccessToken();
+  const hdrs = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+  // Normalize property id → "properties/XXXXXXX"
+  const prop = propertyId.toString().startsWith('properties/')
+    ? propertyId
+    : `properties/${propertyId}`;
+
+  const url = `https://analyticsdata.googleapis.com/v1beta/${prop}:runReport`;
+
+  const dateEnd   = daysAgo(1);
+  const date6M    = daysAgo(182);
+  const date28D   = daysAgo(28);
+  const date7D    = daysAgo(7);
+
+  const run = (body) =>
+    fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body) })
+      .then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e?.error?.message || 'GA4 error'); }))
+      .catch(() => null);
+
+  const [overview, channels, pages, devices, countries, daily7d, daily28d, daily6m] = await Promise.all([
+    // Overview totals (6 months)
+    run({
+      dateRanges: [{ startDate: date6M, endDate: dateEnd }],
+      metrics: [
+        { name: 'sessions' }, { name: 'totalUsers' }, { name: 'newUsers' },
+        { name: 'engagementRate' }, { name: 'averageSessionDuration' }, { name: 'screenPageViews' },
+        { name: 'bounceRate' },
+      ],
+    }),
+    // Traffic channels
+    run({
+      dateRanges: [{ startDate: date6M, endDate: dateEnd }],
+      dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'engagementRate' }],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 10,
+    }),
+    // Top pages
+    run({
+      dateRanges: [{ startDate: date6M, endDate: dateEnd }],
+      dimensions: [{ name: 'pagePath' }],
+      metrics: [{ name: 'screenPageViews' }, { name: 'sessions' }, { name: 'averageSessionDuration' }, { name: 'engagementRate' }],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 20,
+    }),
+    // Devices
+    run({
+      dateRanges: [{ startDate: date6M, endDate: dateEnd }],
+      dimensions: [{ name: 'deviceCategory' }],
+      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'engagementRate' }],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    }),
+    // Countries
+    run({
+      dateRanges: [{ startDate: date6M, endDate: dateEnd }],
+      dimensions: [{ name: 'country' }],
+      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'engagementRate' }],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 20,
+    }),
+    // Daily chart 7 days
+    run({
+      dateRanges: [{ startDate: date7D, endDate: dateEnd }],
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }],
+      orderBys: [{ dimension: { dimensionName: 'date' } }],
+    }),
+    // Daily chart 28 days
+    run({
+      dateRanges: [{ startDate: date28D, endDate: dateEnd }],
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }],
+      orderBys: [{ dimension: { dimensionName: 'date' } }],
+    }),
+    // Daily chart 6 months
+    run({
+      dateRanges: [{ startDate: date6M, endDate: dateEnd }],
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'sessions' }, { name: 'totalUsers' }],
+      orderBys: [{ dimension: { dimensionName: 'date' } }],
+    }),
+  ]);
+
+  const metVal = (row, idx) => parseFloat(row?.metricValues?.[idx]?.value || 0);
+  const dimVal = (row, idx) => row?.dimensionValues?.[idx]?.value || '';
+
+  // Overview
+  const ov = overview?.rows?.[0];
+  const summary = {
+    sessions:        Math.round(metVal(ov, 0)),
+    users:           Math.round(metVal(ov, 1)),
+    newUsers:        Math.round(metVal(ov, 2)),
+    engagementRate:  +(metVal(ov, 3) * 100).toFixed(1),
+    avgSessionDur:   +metVal(ov, 4).toFixed(0),
+    pageViews:       Math.round(metVal(ov, 5)),
+    bounceRate:      +(metVal(ov, 6) * 100).toFixed(1),
+  };
+
+  // Channels
+  const channelRows = (channels?.rows || []).map(r => ({
+    channel:         dimVal(r, 0),
+    sessions:        Math.round(metVal(r, 0)),
+    users:           Math.round(metVal(r, 1)),
+    engagementRate:  +(metVal(r, 2) * 100).toFixed(1),
+  }));
+
+  // Pages
+  const pageRows = (pages?.rows || []).map(r => ({
+    page:            dimVal(r, 0),
+    pageViews:       Math.round(metVal(r, 0)),
+    sessions:        Math.round(metVal(r, 1)),
+    avgDuration:     +metVal(r, 2).toFixed(0),
+    engagementRate:  +(metVal(r, 3) * 100).toFixed(1),
+  }));
+
+  // Devices
+  const deviceRows = (devices?.rows || []).map(r => ({
+    device:          dimVal(r, 0),
+    sessions:        Math.round(metVal(r, 0)),
+    users:           Math.round(metVal(r, 1)),
+    engagementRate:  +(metVal(r, 2) * 100).toFixed(1),
+  }));
+
+  // Countries
+  const countryRows = (countries?.rows || []).map(r => ({
+    country:         dimVal(r, 0),
+    sessions:        Math.round(metVal(r, 0)),
+    users:           Math.round(metVal(r, 1)),
+    engagementRate:  +(metVal(r, 2) * 100).toFixed(1),
+  }));
+
+  // Daily charts
+  const fmtDaily = (report) => (report?.rows || []).map(r => ({
+    date:     dimVal(r, 0),
+    sessions: Math.round(metVal(r, 0)),
+    users:    Math.round(metVal(r, 1)),
+  }));
+
+  return {
+    configured: true,
+    property:   prop,
+    summary,
+    channels:   channelRows,
+    pages:      pageRows,
+    devices:    deviceRows,
+    countries:  countryRows,
+    daily7d:    fmtDaily(daily7d),
+    daily28d:   fmtDaily(daily28d),
+    daily6m:    fmtDaily(daily6m),
   };
 }
 
