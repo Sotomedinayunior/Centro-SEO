@@ -130,23 +130,36 @@ async function fetchGMB(auth, locationName) {
   const locationId = parts[3] || parts[1];
   console.log('[GMB] locationId:', locationId);
 
-  // Try new Reviews API first (mybusinessreviews.googleapis.com/v1), fallback to v4
+  // locationName = "accounts/{accountId}/locations/{locationId}"
+  // New Reviews API needs just "locations/{locationId}"
+  const locSegment = locationName.includes('/locations/')
+    ? 'locations/' + locationName.split('/locations/')[1]
+    : locationName;
+
+  // Try all known API patterns in order
   const fetchReviews = async () => {
-    // New API (post-2022)
-    const r1 = await fetch(
+    const attempts = [
+      // New API (2022+) - with just locations/{id}
+      `https://mybusinessreviews.googleapis.com/v1/${locSegment}/reviews?pageSize=50`,
+      // New API - with full accounts/.../locations/... path
       `https://mybusinessreviews.googleapis.com/v1/${locationName}/reviews?pageSize=50`,
-      { headers: hdrs }
-    );
-    if (r1.ok) return r1.json();
-    // Fallback: old v4 API
-    const r2 = await fetch(
+      // Old v4 API (deprecated but may still work)
       `https://mybusiness.googleapis.com/v4/${locationName}/reviews?pageSize=50`,
-      { headers: hdrs }
-    );
-    if (r2.ok) return r2.json();
-    // Return error details for debugging
-    const errText = await r1.text().catch(() => r1.status);
-    console.error('Reviews API error:', r1.status, errText);
+    ];
+    for (const url of attempts) {
+      try {
+        const r = await fetch(url, { headers: hdrs });
+        if (r.ok) {
+          const data = await r.json();
+          console.log('[GMB Reviews] OK:', url.split('googleapis.com')[1]);
+          return data;
+        }
+        const errBody = await r.text().catch(() => '');
+        console.log('[GMB Reviews] failed', r.status, url.split('googleapis.com')[1], errBody.slice(0, 120));
+      } catch (e) {
+        console.log('[GMB Reviews] exception:', url.split('googleapis.com')[1], e.message);
+      }
+    }
     return null;
   };
 
@@ -208,7 +221,9 @@ async function fetchGMB(auth, locationName) {
     rating:      isNaN(avgRating) ? null : avgRating,
     reviewCount: isNaN(totalCount) ? null : totalCount,
     reviews,
-    reviewsApiError: reviewsRes === null ? 'No se pudo obtener reseñas de la API' : null,
+    reviewsApiError: reviewsRes === null
+      ? `API de reseñas no respondió. Location: ${locSegment}. Verifica en Vercel logs.`
+      : null,
     performance: {
       views:   { maps: mapsViews, search: searchViews, total: mapsViews+searchViews },
       actions: { calls, websiteClicks: webClicks, directions: dirs, total: calls+webClicks+dirs },
