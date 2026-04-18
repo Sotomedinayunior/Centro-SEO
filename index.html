@@ -1978,10 +1978,8 @@ function renderGMB(G) {
 
 // ── SerpAPI Reviews ───────────────────────────────────────────────────────────
 async function loadReviews() {
-  const pid = ls.get(LS.pid);
-  if (!pid) return null;
   try {
-    const r = await fetch(`/api/reviews?place_id=${encodeURIComponent(pid)}`);
+    const r = await fetch('/api/reviews');
     if (!r.ok) { const e=await r.json(); throw new Error(e.error||r.status); }
     return await r.json();
   } catch(e) { console.error('[Reviews]', e.message); return { error: e.message }; }
