@@ -14,7 +14,6 @@ const { google } = require('googleapis');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 's-maxage=3600');
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Use GET' });
@@ -49,6 +48,10 @@ module.exports = async function handler(req, res) {
   const gscData = gsc.status === 'fulfilled' ? gsc.value : { error: gsc.reason?.message };
   const gmbData = gmb.status === 'fulfilled' ? gmb.value : { ...EMPTY_GMB, error: gmb.reason?.message };
   const ga4Data = ga4.status === 'fulfilled' ? ga4.value : { error: ga4.reason?.message };
+
+  // Cache successful responses for 1 hour; never cache errors
+  const hasError = gscData.error || ga4Data?.error;
+  res.setHeader('Cache-Control', hasError ? 'no-store' : 's-maxage=3600, stale-while-revalidate=600');
 
   return res.status(200).json({ ...gscData, gmb: gmbData, ga4: ga4Data });
 };
@@ -143,9 +146,11 @@ async function fetchGA4(auth, propertyId) {
   const date28D   = daysAgo(28);
   const date7D    = daysAgo(7);
 
+  const TIMEOUT = AbortSignal.timeout(7000);
+
   // Primera llamada sin silenciar errores para detectar el problema real
   const runFirst = async (body) => {
-    const r = await fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
+    const r = await fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body), signal: AbortSignal.timeout(7000) });
     if (!r.ok) {
       const e = await r.json().catch(() => ({}));
       throw new Error(e?.error?.message || `GA4 HTTP ${r.status}`);
@@ -153,7 +158,7 @@ async function fetchGA4(auth, propertyId) {
     return r.json();
   };
   const run = (body) =>
-    fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body) })
+    fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body), signal: AbortSignal.timeout(7000) })
       .then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e?.error?.message || 'GA4 error'); }))
       .catch(() => null);
 

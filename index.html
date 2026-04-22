@@ -3868,15 +3868,24 @@ function renderOnPageTable(rows) {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function bootDashboard() {
   applyStoredConfig();
-  const [D, reviews] = await Promise.all([loadData(), loadReviews()]);
-  window._dashData    = D;
-  window._ga4Data     = D.ga4;
+
+  // Load data + reviews in parallel; errors are caught individually
+  const [D, reviews] = await Promise.all([
+    loadData().catch(e => { console.error('[bootDashboard] loadData:', e.message); return null; }),
+    loadReviews().catch(e => { console.error('[bootDashboard] loadReviews:', e.message); return { ok: false, error: e.message }; }),
+  ]);
+
+  const safeD = D || {};
+  window._dashData    = safeD;
+  window._ga4Data     = safeD.ga4 || null;
   window._reviewsData = reviews;
-  render(D);
-  renderGMB(D.gmb || null);
-  renderGA4(D.ga4 || null);
-  if (reviews) renderSerpReviews(reviews);
-  loadGmbData(); // load SerpAPI business profile cards
+
+  try { render(safeD); }        catch(e) { console.error('[render]',    e); }
+  try { renderGMB(safeD.gmb || null); } catch(e) { console.error('[renderGMB]', e); }
+  try { renderGA4(safeD.ga4 || null); } catch(e) { console.error('[renderGA4]', e); }
+  try { if (reviews) renderSerpReviews(reviews); } catch(e) { console.error('[renderSerpReviews]', e); }
+
+  loadGmbData(); // load SerpAPI business profile cards (independent)
 }
 
 bootDashboard();

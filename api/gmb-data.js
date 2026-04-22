@@ -19,7 +19,6 @@ const LOCATIONS = [
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 's-maxage=3600'); // 1 hour
 
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) return res.status(500).json({ error: 'SERPAPI_KEY no configurada' });
@@ -29,12 +28,17 @@ module.exports = async function handler(req, res) {
       LOCATIONS.map(loc => fetchPlaceData(loc, apiKey))
     );
 
+    // Cache only when all locations responded OK
+    const allOk = results.every(r => r.ok);
+    res.setHeader('Cache-Control', allOk ? 's-maxage=3600, stale-while-revalidate=600' : 'no-store');
+
     return res.status(200).json({
       ok: true,
       locations: results,
       fetchedAt: new Date().toISOString(),
     });
   } catch (err) {
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(500).json({ error: err.message });
   }
 };
