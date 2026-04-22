@@ -388,6 +388,45 @@ html,body{overflow-x:hidden;width:100%}
   .main{padding:12px 10px 80px}
   .page-title{font-size:18px}
 }
+
+/* ── SCORE BADGES ─────────────────────────────────────────────── */
+.score-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-weight:700;font-size:12px;font-family:var(--ffc);min-width:40px;text-align:center}
+.score-good{background:#e8f5ee;color:#27a663}
+.score-mid{background:#fff0e6;color:#E8610A}
+.score-poor{background:#fcebeb;color:#e24b4a}
+.score-na{background:var(--surface2);color:var(--text3)}
+
+/* ── RANK BADGE ───────────────────────────────────────────────── */
+.rank-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-weight:700;font-size:11px;font-family:var(--ffc)}
+.rank-top3{background:#fff0e6;color:var(--orange)}
+.rank-top10{background:#e6f1fb;color:#378ADD}
+.rank-other{background:var(--surface2);color:var(--text2)}
+.rank-none{background:#fcebeb;color:#e24b4a}
+
+/* ── SEO TAG STATUS ───────────────────────────────────────────── */
+.tag-ok{color:var(--green);font-size:11px}
+.tag-miss{color:var(--red);font-size:11px;font-weight:600}
+.tag-trunc{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:12px}
+
+/* ── SERP COMPETITOR ROW ──────────────────────────────────────── */
+.comp-domain{font-size:11px;color:var(--text2)}
+.comp-pos{font-family:var(--ffc);font-size:14px;font-weight:700;color:var(--text)}
+
+/* ── PROGRESS RUN BUTTON ──────────────────────────────────────── */
+.run-btn{display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;border:none;padding:10px 22px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:background 0.15s}
+.run-btn:hover{background:var(--orange-dark)}
+.run-btn:disabled{background:#ccc;cursor:not-allowed}
+
+/* ── STRATEGY TOGGLE ──────────────────────────────────────────── */
+.strat-toggle{display:inline-flex;gap:0;border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden}
+.strat-btn{padding:5px 14px;font-size:12px;font-weight:600;border:none;background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.strat-btn.active{background:var(--orange);color:#fff}
+
+/* mobile nav scroll */
+@media(max-width:768px){
+  .mobile-nav{overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start}
+  .mobile-nav-item{flex-shrink:0;min-width:56px}
+}
 </style>
 </head>
 <body>
@@ -432,6 +471,18 @@ html,body{overflow-x:hidden;width:100%}
     <div class="nav-item" data-page="audit" onclick="showPage('audit',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h3"/></svg>
       Auditoría
+    </div>
+    <div class="nav-item" data-page="pagespeed" onclick="showPage('pagespeed',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="9" r="5.5"/><path d="M8 9 L11 5" stroke-linecap="round"/><circle cx="8" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg>
+      PageSpeed
+    </div>
+    <div class="nav-item" data-page="serp" onclick="showPage('serp',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v1.5H2zM2 7h9v1.5H2zM2 11h6v1.5H2z"/></svg>
+      SERP & Posiciones
+    </div>
+    <div class="nav-item" data-page="onpage" onclick="showPage('onpage',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5 5h6M5 7.5h6M5 10h4" stroke-linecap="round"/></svg>
+      SEO On-Page
     </div>
     <div class="nav-label">Estrategia</div>
     <div class="nav-item" data-page="experiments" onclick="showPage('experiments',this)">
@@ -1121,6 +1172,237 @@ html,body{overflow-x:hidden;width:100%}
   </div>
 </div>
 
+
+<!-- =========== PAGE: PAGESPEED =========== -->
+<div id="page-pagespeed" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">PageSpeed & Core Web Vitals</div>
+      <div class="page-sub">Google PageSpeed Insights · Todas las páginas del sitemap</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="strat-toggle">
+        <button class="strat-btn active" id="ps-btn-mobile" onclick="setPsStrategy('mobile',this)">📱 Mobile</button>
+        <button class="strat-btn" id="ps-btn-desktop" onclick="setPsStrategy('desktop',this)">🖥 Desktop</button>
+      </div>
+      <button class="run-btn" id="ps-run-btn" onclick="runPagespeed()">▶ Analizar</button>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-grid" id="ps-kpis" style="display:none;grid-template-columns:repeat(5,minmax(0,1fr))">
+    <div class="kpi-card">
+      <div class="kpi-label">Score Promedio</div>
+      <div class="kpi-value" id="ps-avg">—</div>
+      <div class="kpi-sub">rendimiento</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">✅ Bueno (90+)</div>
+      <div class="kpi-value" id="ps-good" style="color:var(--green)">—</div>
+      <div class="kpi-sub">páginas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">⚠️ Mejorar (50-89)</div>
+      <div class="kpi-value" id="ps-mid" style="color:var(--orange)">—</div>
+      <div class="kpi-sub">páginas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">❌ Malo (&lt;50)</div>
+      <div class="kpi-value" id="ps-poor" style="color:var(--red)">—</div>
+      <div class="kpi-sub">páginas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Analizadas</div>
+      <div class="kpi-value" id="ps-total">—</div>
+      <div class="kpi-sub">páginas del sitemap</div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="ps-status" style="display:none;text-align:center;padding:50px 20px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:20px"></div>
+
+  <!-- Results table -->
+  <div id="ps-results" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">URL</th>
+              <th style="text-align:center;padding:10px 14px;color:var(--text2);font-weight:700;width:70px">Score</th>
+              <th style="text-align:right;padding:10px 14px;color:var(--text2);font-weight:700">FCP</th>
+              <th style="text-align:right;padding:10px 14px;color:var(--text2);font-weight:700">LCP</th>
+              <th style="text-align:right;padding:10px 14px;color:var(--text2);font-weight:700">TBT</th>
+              <th style="text-align:right;padding:10px 14px;color:var(--text2);font-weight:700">CLS</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">Mejoras Principales</th>
+            </tr>
+          </thead>
+          <tbody id="ps-tbody"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text3)">Presiona "Analizar" para iniciar el análisis.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:right" id="ps-timestamp"></div>
+  </div>
+</div>
+
+<!-- =========== PAGE: SERP POSITIONS =========== -->
+<div id="page-serp" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">SERP & Posiciones Google</div>
+      <div class="page-sub">Checker de posiciones en Google · Requiere SERPAPI_KEY</div>
+    </div>
+    <button class="run-btn" id="serp-run-btn" onclick="runSerp()">▶ Verificar Posiciones</button>
+  </div>
+
+  <!-- Custom keywords input -->
+  <div class="card" style="margin-bottom:20px;padding:14px 18px">
+    <div class="card-title">Keywords a rastrear</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1;min-width:240px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Separadas por coma (dejar vacío para usar las 5 por defecto)</div>
+        <input id="serp-kw-input" type="text" placeholder="ej: rent a car santo domingo, nelly rac..." style="width:100%;padding:8px 12px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-family:var(--ff);background:var(--surface);color:var(--text)">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="serp-gl-select" style="padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-family:var(--ff);background:var(--surface);color:var(--text)">
+          <option value="do" selected>🇩🇴 DO</option>
+          <option value="us">🇺🇸 US</option>
+          <option value="es">🇪🇸 ES</option>
+          <option value="mx">🇲🇽 MX</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI summary -->
+  <div class="kpi-grid" id="serp-kpis" style="display:none;grid-template-columns:repeat(5,minmax(0,1fr))">
+    <div class="kpi-card">
+      <div class="kpi-label">Keywords Rastreadas</div>
+      <div class="kpi-value" id="serp-total">—</div>
+      <div class="kpi-sub">keywords</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Posicionadas</div>
+      <div class="kpi-value" id="serp-ranking" style="color:var(--green)">—</div>
+      <div class="kpi-sub">en top 20</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top 3</div>
+      <div class="kpi-value" id="serp-top3" style="color:var(--orange)">—</div>
+      <div class="kpi-sub">keywords</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top 10</div>
+      <div class="kpi-value" id="serp-top10" style="color:var(--blue)">—</div>
+      <div class="kpi-sub">primera página</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Posición Media</div>
+      <div class="kpi-value" id="serp-avgpos">—</div>
+      <div class="kpi-sub">promedio</div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="serp-status" style="display:none;text-align:center;padding:50px 20px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:20px"></div>
+
+  <!-- Results -->
+  <div id="serp-results" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">Keyword</th>
+              <th style="text-align:center;padding:10px 14px;color:var(--text2);font-weight:700;width:80px">Pos.</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">URL nuestra</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">Competidores (Top 5)</th>
+            </tr>
+          </thead>
+          <tbody id="serp-tbody"><tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Presiona "Verificar Posiciones" para iniciar.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:right" id="serp-timestamp"></div>
+  </div>
+</div>
+
+<!-- =========== PAGE: ON-PAGE SEO =========== -->
+<div id="page-onpage" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">SEO On-Page</div>
+      <div class="page-sub">Meta tags, H1, canonical y robots de todas las páginas</div>
+    </div>
+    <button class="run-btn" id="onpage-run-btn" onclick="runOnPage()">▶ Analizar SEO On-Page</button>
+  </div>
+
+  <!-- Issue KPIs -->
+  <div class="kpi-grid" id="onpage-kpis" style="display:none;grid-template-columns:repeat(5,minmax(0,1fr))">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Páginas</div>
+      <div class="kpi-value" id="op-total">—</div>
+      <div class="kpi-sub">analizadas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">❌ Sin Description</div>
+      <div class="kpi-value" id="op-nodesc" style="color:var(--red)">—</div>
+      <div class="kpi-sub">páginas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">❌ Sin H1</div>
+      <div class="kpi-value" id="op-noh1" style="color:var(--red)">—</div>
+      <div class="kpi-sub">páginas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">❌ Sin Canonical</div>
+      <div class="kpi-value" id="op-nocanon" style="color:var(--orange)">—</div>
+      <div class="kpi-sub">páginas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">✅ Sin Issues</div>
+      <div class="kpi-value" id="op-clean" style="color:var(--green)">—</div>
+      <div class="kpi-sub">páginas OK</div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div id="onpage-filters" style="display:none;margin-bottom:14px">
+    <div class="review-filter-tabs">
+      <button class="rf-tab active" onclick="filterOnPage('all',this)">Todas</button>
+      <button class="rf-tab" onclick="filterOnPage('issues',this)">⚠️ Con Issues</button>
+      <button class="rf-tab" onclick="filterOnPage('nodesc',this)">Sin Description</button>
+      <button class="rf-tab" onclick="filterOnPage('noh1',this)">Sin H1</button>
+      <button class="rf-tab" onclick="filterOnPage('nocanon',this)">Sin Canonical</button>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="onpage-status" style="display:none;text-align:center;padding:50px 20px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:20px"></div>
+
+  <!-- Results -->
+  <div id="onpage-results" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">URL</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700;min-width:180px">Title</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700;min-width:200px">Meta Description</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700;min-width:120px">H1</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">Canonical</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">Robots</th>
+            </tr>
+          </thead>
+          <tbody id="onpage-tbody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text3)">Presiona "Analizar SEO On-Page" para iniciar.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:right" id="onpage-timestamp"></div>
+  </div>
+</div>
+
 </main>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -1148,6 +1430,18 @@ html,body{overflow-x:hidden;width:100%}
   <div class="mobile-nav-item" onclick="showPage('audit',this)" data-page="audit">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h3"/></svg>
     Auditoría
+  </div>
+  <div class="mobile-nav-item" onclick="showPage('pagespeed',this)" data-page="pagespeed">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="9" r="5.5"/><path d="M8 9 L11 5" stroke-linecap="round"/><circle cx="8" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg>
+    Speed
+  </div>
+  <div class="mobile-nav-item" onclick="showPage('serp',this)" data-page="serp">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v1.5H2zM2 7h9v1.5H2zM2 11h6v1.5H2z"/></svg>
+    SERP
+  </div>
+  <div class="mobile-nav-item" onclick="showPage('onpage',this)" data-page="onpage">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5 5h6M5 7.5h6M5 10h4" stroke-linecap="round"/></svg>
+    On-Page
   </div>
   <div class="mobile-nav-item" onclick="showPage('experiments',this)" data-page="experiments">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></svg>
@@ -2437,6 +2731,274 @@ function renderAuditTable(rows) {
       <td style="padding:10px 14px;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.title || '—'}</td>
       <td style="padding:10px 14px;text-align:right;font-weight:600;color:${msColor(r.ms)}">${r.ms ? r.ms+'ms' : '—'}</td>
       <td style="padding:10px 14px;color:#378ADD;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.location ? r.location.replace('https://nellyrac.do','') : '—'}</td>
+    </tr>`).join('');
+}
+
+// ── PageSpeed ─────────────────────────────────────────────────────────────────
+let psStrategy = 'mobile';
+function setPsStrategy(s, btn) {
+  psStrategy = s;
+  document.querySelectorAll('.strat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+async function runPagespeed() {
+  const btn    = document.getElementById('ps-run-btn');
+  const status = document.getElementById('ps-status');
+  const kpis   = document.getElementById('ps-kpis');
+  const res    = document.getElementById('ps-results');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Analizando…';
+  status.style.display = 'block';
+  status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⚡</div><div style="font-size:15px;font-weight:600;color:var(--text)">Analizando rendimiento con PageSpeed Insights…</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Puede tardar 30-60 segundos por el límite de la API gratuita</div>`;
+  kpis.style.display = 'none';
+  res.style.display = 'none';
+
+  try {
+    const r = await fetch(`/api/pagespeed?strategy=${psStrategy}`);
+    if (!r.ok) throw new Error('Error del servidor');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido');
+
+    const S = data.summary;
+    document.getElementById('ps-avg').textContent   = S.avgScore ?? '—';
+    document.getElementById('ps-good').textContent  = S.good;
+    document.getElementById('ps-mid').textContent   = S.needsWork;
+    document.getElementById('ps-poor').textContent  = S.poor;
+    document.getElementById('ps-total').textContent = S.total;
+    kpis.style.display = 'grid';
+
+    // Color avg score badge
+    const avgEl = document.getElementById('ps-avg');
+    if (S.avgScore !== null) {
+      avgEl.style.color = S.avgScore >= 90 ? 'var(--green)' : S.avgScore >= 50 ? 'var(--orange)' : 'var(--red)';
+    }
+
+    document.getElementById('ps-timestamp').textContent =
+      'Analizado: ' + new Date(data.checkedAt).toLocaleString('es-DO') + ' · Estrategia: ' + data.strategy;
+
+    renderPsTable(data.results || []);
+    status.style.display = 'none';
+    res.style.display = 'block';
+
+  } catch(e) {
+    status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⚠️</div><div style="font-size:15px;font-weight:600;color:var(--red)">Error al analizar</div><div style="font-size:13px;color:var(--text2);margin-top:6px">${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Analizar';
+  }
+}
+
+function renderPsTable(rows) {
+  const tbody = document.getElementById('ps-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text3)">Sin resultados.</td></tr>'; return; }
+
+  const scoreBadge = s => {
+    if (s === null) return `<span class="score-badge score-na">—</span>`;
+    if (s >= 90)   return `<span class="score-badge score-good">${s}</span>`;
+    if (s >= 50)   return `<span class="score-badge score-mid">${s}</span>`;
+    return             `<span class="score-badge score-poor">${s}</span>`;
+  };
+  const cwvVal = m => m?.displayValue || '—';
+  const shortUrl = u => u.replace('https://nellyrac.do','') || '/';
+
+  tbody.innerHTML = rows.map(r => `
+    <tr style="border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px;max-width:220px">
+        <a href="${r.url}" target="_blank" style="color:var(--blue);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.url}">${shortUrl(r.url)}</a>
+        ${r.error ? `<span style="font-size:10px;color:var(--red)">${r.error}</span>` : ''}
+      </td>
+      <td style="padding:10px 14px;text-align:center">${scoreBadge(r.score)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text2)">${cwvVal(r.cwv?.fcp)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text2)">${cwvVal(r.cwv?.lcp)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text2)">${cwvVal(r.cwv?.tbt)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text2)">${cwvVal(r.cwv?.cls)}</td>
+      <td style="padding:10px 14px;color:var(--text2);font-size:11px">
+        ${(r.opportunities||[]).map(o => `<span style="display:inline-block;margin:2px 3px 2px 0;background:${o.impact==='high'?'#fff0e6':'#e6f1fb'};color:${o.impact==='high'?'var(--orange)':'#378ADD'};padding:2px 7px;border-radius:10px;font-size:10px;white-space:nowrap">${o.title}</span>`).join('')||'—'}
+      </td>
+    </tr>`).join('');
+}
+
+// ── SERP Checker ──────────────────────────────────────────────────────────────
+async function runSerp() {
+  const btn    = document.getElementById('serp-run-btn');
+  const status = document.getElementById('serp-status');
+  const kpis   = document.getElementById('serp-kpis');
+  const res    = document.getElementById('serp-results');
+  const kwVal  = document.getElementById('serp-kw-input').value.trim();
+  const gl     = document.getElementById('serp-gl-select').value;
+
+  let url = `/api/serp?gl=${gl}&hl=es`;
+  if (kwVal) url += '&keywords=' + encodeURIComponent(kwVal);
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Buscando…';
+  status.style.display = 'block';
+  status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">🔍</div><div style="font-size:15px;font-weight:600;color:var(--text)">Verificando posiciones en Google…</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Consultando SerpAPI para cada keyword</div>`;
+  kpis.style.display = 'none';
+  res.style.display = 'none';
+
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Error del servidor');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido');
+
+    const S = data.summary;
+    document.getElementById('serp-total').textContent   = S.total;
+    document.getElementById('serp-ranking').textContent = S.ranking;
+    document.getElementById('serp-top3').textContent    = S.top3;
+    document.getElementById('serp-top10').textContent   = S.top10;
+    document.getElementById('serp-avgpos').textContent  = S.avgPos ?? '—';
+    kpis.style.display = 'grid';
+
+    document.getElementById('serp-timestamp').textContent =
+      'Verificado: ' + new Date(data.checkedAt).toLocaleString('es-DO') + ' · Dominio: ' + data.domain;
+
+    renderSerpTable(data.keywords || []);
+    status.style.display = 'none';
+    res.style.display = 'block';
+
+  } catch(e) {
+    status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⚠️</div><div style="font-size:15px;font-weight:600;color:var(--red)">Error al verificar</div><div style="font-size:13px;color:var(--text2);margin-top:6px">${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Verificar Posiciones';
+  }
+}
+
+function renderSerpTable(rows) {
+  const tbody = document.getElementById('serp-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Sin resultados.</td></tr>'; return; }
+
+  const rankBadge = pos => {
+    if (!pos) return `<span class="rank-badge rank-none">No encontrado</span>`;
+    if (pos <= 3)  return `<span class="rank-badge rank-top3">🥇 #${pos}</span>`;
+    if (pos <= 10) return `<span class="rank-badge rank-top10">#${pos}</span>`;
+    return             `<span class="rank-badge rank-other">#${pos}</span>`;
+  };
+
+  tbody.innerHTML = rows.map(r => `
+    <tr style="border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px;font-weight:600;color:var(--text)">${sanitizeText(r.keyword)}</td>
+      <td style="padding:10px 14px;text-align:center">${rankBadge(r.position)}</td>
+      <td style="padding:10px 14px;max-width:200px">
+        ${r.url ? `<a href="${r.url}" target="_blank" style="color:var(--blue);font-size:11px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.url}">${r.url.replace('https://nellyrac.do','') || '/'}</a>` : '<span style="color:var(--text3);font-size:12px">—</span>'}
+        ${r.title ? `<span style="font-size:11px;color:var(--text2);display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sanitizeText(r.title)}</span>` : ''}
+      </td>
+      <td style="padding:10px 14px">
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${(r.competitors||[]).slice(0,4).map(c => `
+            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:3px 10px;font-size:10px;white-space:nowrap">
+              <span class="comp-pos">#${c.position}</span>
+              <span class="comp-domain">${c.domain}</span>
+            </span>`).join('')||'<span style="color:var(--text3);font-size:12px">—</span>'}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ── On-Page SEO ───────────────────────────────────────────────────────────────
+let onPageAllResults = [];
+async function runOnPage() {
+  const btn    = document.getElementById('onpage-run-btn');
+  const status = document.getElementById('onpage-status');
+  const kpis   = document.getElementById('onpage-kpis');
+  const filters= document.getElementById('onpage-filters');
+  const res    = document.getElementById('onpage-results');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Rastreando…';
+  status.style.display = 'block';
+  status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">🔎</div><div style="font-size:15px;font-weight:600;color:var(--text)">Analizando meta tags de todas las páginas…</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Puede tomar 10-20 segundos</div>`;
+  kpis.style.display = 'none';
+  filters.style.display = 'none';
+  res.style.display = 'none';
+
+  try {
+    const r = await fetch('/api/crawl');
+    if (!r.ok) throw new Error('Error del servidor');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido');
+
+    onPageAllResults = (data.results || []).filter(p => p.status === 200);
+    const S = data.summary;
+    const total = onPageAllResults.length;
+    const noDesc   = onPageAllResults.filter(p => !p.meta?.description).length;
+    const noH1     = onPageAllResults.filter(p => !p.meta?.h1).length;
+    const noCanon  = onPageAllResults.filter(p => !p.meta?.canonical).length;
+    const clean    = onPageAllResults.filter(p => p.meta?.description && p.meta?.h1 && p.meta?.canonical).length;
+
+    document.getElementById('op-total').textContent   = total;
+    document.getElementById('op-nodesc').textContent  = noDesc;
+    document.getElementById('op-noh1').textContent    = noH1;
+    document.getElementById('op-nocanon').textContent = noCanon;
+    document.getElementById('op-clean').textContent   = clean;
+    kpis.style.display = 'grid';
+
+    document.getElementById('onpage-timestamp').textContent =
+      'Analizado: ' + new Date(data.crawledAt).toLocaleString('es-DO');
+
+    // Reset filter
+    document.querySelectorAll('#onpage-filters .rf-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('#onpage-filters .rf-tab').classList.add('active');
+
+    filters.style.display = 'block';
+    status.style.display = 'none';
+    res.style.display = 'block';
+    renderOnPageTable(onPageAllResults);
+
+  } catch(e) {
+    status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⚠️</div><div style="font-size:15px;font-weight:600;color:var(--red)">Error al analizar</div><div style="font-size:13px;color:var(--text2);margin-top:6px">${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Analizar SEO On-Page';
+  }
+}
+
+function filterOnPage(type, btn) {
+  document.querySelectorAll('#onpage-filters .rf-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered = onPageAllResults;
+  if (type === 'issues')  filtered = onPageAllResults.filter(p => !p.meta?.description || !p.meta?.h1 || !p.meta?.canonical);
+  if (type === 'nodesc')  filtered = onPageAllResults.filter(p => !p.meta?.description);
+  if (type === 'noh1')    filtered = onPageAllResults.filter(p => !p.meta?.h1);
+  if (type === 'nocanon') filtered = onPageAllResults.filter(p => !p.meta?.canonical);
+  renderOnPageTable(filtered);
+}
+
+function renderOnPageTable(rows) {
+  const tbody = document.getElementById('onpage-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text3)">Sin resultados en esta categoría.</td></tr>'; return; }
+
+  const fieldCell = (val, maxLen) => {
+    if (!val) return `<span class="tag-miss">❌ Falta</span>`;
+    const short = val.length > maxLen ? val.slice(0, maxLen) + '…' : val;
+    const color = val.length < 10 ? 'var(--orange)' : 'var(--text)';
+    return `<span class="tag-trunc" style="color:${color}" title="${val.replace(/"/g,"'")}">${short}</span>`;
+  };
+  const canonCell = val => {
+    if (!val) return `<span class="tag-miss">❌ Falta</span>`;
+    const path = val.replace('https://nellyrac.do','') || '/';
+    return `<span class="tag-trunc" style="color:var(--text3)" title="${val}">${path}</span>`;
+  };
+  const robotsCell = val => {
+    if (!val) return `<span style="color:var(--text3);font-size:11px">—</span>`;
+    const noIndex = val.toLowerCase().includes('noindex');
+    return `<span style="font-size:11px;font-weight:600;color:${noIndex?'var(--red)':'var(--green)'}">${val}</span>`;
+  };
+  const shortUrl = u => u.replace('https://nellyrac.do','') || '/';
+
+  tbody.innerHTML = rows.map(r => `
+    <tr style="border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px;max-width:180px">
+        <a href="${r.url}" target="_blank" style="color:var(--blue);font-size:11px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.url}">${shortUrl(r.url)}</a>
+      </td>
+      <td style="padding:10px 14px">${fieldCell(r.title, 55)}</td>
+      <td style="padding:10px 14px">${fieldCell(r.meta?.description, 100)}</td>
+      <td style="padding:10px 14px">${fieldCell(r.meta?.h1, 60)}</td>
+      <td style="padding:10px 14px">${canonCell(r.meta?.canonical)}</td>
+      <td style="padding:10px 14px">${robotsCell(r.meta?.robots)}</td>
     </tr>`).join('');
 }
 

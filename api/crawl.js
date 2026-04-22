@@ -28,13 +28,17 @@ module.exports = async function handler(req, res) {
     const results = await checkUrlsBatch(urls, CONCURRENCY);
 
     // 3. Build summary
+    const ok200 = results.filter(r => r.status === 200);
     const summary = {
       total:      results.length,
-      ok:         results.filter(r => r.status === 200).length,
+      ok:         ok200.length,
       redirects:  results.filter(r => r.status >= 300 && r.status < 400).length,
       notFound:   results.filter(r => r.status === 404).length,
       errors:     results.filter(r => r.status >= 400 && r.status !== 404).length,
       slow:       results.filter(r => r.ms > 2000).length,
+      noDesc:     ok200.filter(r => !r.meta?.description).length,
+      noH1:       ok200.filter(r => !r.meta?.h1).length,
+      noCanonical:ok200.filter(r => !r.meta?.canonical).length,
     };
 
     // Sort: errors first, then redirects, then slow, then ok
@@ -101,17 +105,24 @@ async function checkUrl(url) {
     const status   = r.status;
     const location = r.headers.get('location') || null;
 
-    // Try to extract title from HTML for 200 responses
+    // Extract title + meta tags from HTML for 200 responses
     let title = null;
+    let meta  = null;
     if (status === 200) {
       try {
         const html = await r.text();
-        const match = html.match(/<title[^>]*>([^<]{1,120})<\/title>/i);
-        title = match ? match[1].trim() : null;
+        title = extractTag(html, /<title[^>]*>([^<]{1,200})<\/title>/i);
+        meta  = {
+          description: extractMeta(html, 'description'),
+          ogTitle:     extractMeta(html, 'og:title', 'property'),
+          canonical:   extractLink(html, 'canonical'),
+          robots:      extractMeta(html, 'robots'),
+          h1:          extractTag(html, /<h1[^>]*>([^<]{1,200})<\/h1>/i),
+        };
       } catch {}
     }
 
-    return { url, status, ms, location, title, error: null };
+    return { url, status, ms, location, title, meta, error: null };
 
   } catch (err) {
     return {
@@ -120,6 +131,27 @@ async function checkUrl(url) {
       error: err.message.includes('timeout') ? 'Timeout' : 'Error de conexión',
     };
   }
+}
+
+// ── Meta tag helpers ──────────────────────────────────────────────────────────
+function extractTag(html, regex) {
+  try { const m = html.match(regex); return m ? m[1].trim() : null; } catch { return null; }
+}
+function extractMeta(html, name, attr = 'name') {
+  try {
+    const re = new RegExp(`<meta[^>]+${attr}=["']${name}["'][^>]+content=["']([^"']{1,300})["']`, 'i');
+    const re2 = new RegExp(`<meta[^>]+content=["']([^"']{1,300})["'][^>]+${attr}=["']${name}["']`, 'i');
+    const m = html.match(re) || html.match(re2);
+    return m ? m[1].trim() : null;
+  } catch { return null; }
+}
+function extractLink(html, rel) {
+  try {
+    const re = new RegExp(`<link[^>]+rel=["']${rel}["'][^>]+href=["']([^"']+)["']`, 'i');
+    const re2 = new RegExp(`<link[^>]+href=["']([^"']+)["'][^>]+rel=["']${rel}["']`, 'i');
+    const m = html.match(re) || html.match(re2);
+    return m ? m[1].trim() : null;
+  } catch { return null; }
 }
 
 // ── Fetch with timeout ────────────────────────────────────────────────────────
