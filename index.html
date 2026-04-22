@@ -265,6 +265,36 @@ html,body{overflow-x:hidden;width:100%}
   .form-grid{grid-template-columns:minmax(0,1fr)}
 }
 
+/* ── GMB LOCATION CARD ────────────────────────────────────────── */
+.gmb-loc-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:8px;transition:box-shadow 0.15s}
+.gmb-loc-card:hover{box-shadow:0 3px 14px rgba(0,0,0,0.08)}
+.glc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.glc-name{font-size:13px;font-weight:700;color:var(--text);line-height:1.3}
+.glc-rating{display:inline-flex;align-items:center;gap:4px;background:var(--orange-pale);color:var(--orange);font-weight:700;font-size:12px;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.glc-info{font-size:11px;color:var(--text3);line-height:1.7}
+.glc-info span{display:block}
+.glc-hours{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.hours-open{background:#e8f5ee;color:var(--green)}
+.hours-closed{background:#fcebeb;color:var(--red)}
+.glc-actions{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
+.glc-btn{font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--radius-sm);border:1px solid;cursor:pointer;font-family:var(--ff);text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s}
+.glc-btn-primary{background:var(--orange);color:#fff;border-color:var(--orange)}
+.glc-btn-primary:hover{background:var(--orange-dark);border-color:var(--orange-dark)}
+.glc-btn-ghost{background:var(--surface);color:var(--text2);border-color:var(--border2)}
+.glc-btn-ghost:hover{border-color:var(--orange);color:var(--orange)}
+
+/* ── REPLY BOX ────────────────────────────────────────────────── */
+.reply-box{margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface2)}
+.reply-box-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--darkbg);color:#fff}
+.reply-box-label{font-size:11px;font-weight:700;letter-spacing:0.5px;color:var(--orange)}
+.reply-textarea{width:100%;border:none;background:transparent;padding:10px 12px;font-size:12px;font-family:var(--ff);color:var(--text);resize:vertical;min-height:80px;outline:none;line-height:1.6}
+.reply-actions{display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--surface);flex-wrap:wrap;align-items:center}
+.reply-copy-btn{background:var(--orange);color:#fff;border:none;padding:6px 14px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--ff);display:flex;align-items:center;gap:5px;transition:background 0.15s}
+.reply-copy-btn:hover{background:var(--orange-dark)}
+.reply-open-btn{font-size:11px;color:var(--blue);text-decoration:none;font-weight:600;padding:6px 0;display:flex;align-items:center;gap:4px}
+.reply-open-btn:hover{text-decoration:underline}
+.reply-copied{font-size:11px;color:var(--green);font-weight:600;display:none}
+
 /* ── LOCATION TABS ────────────────────────────────────────────── */
 .loc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
 .loc-tab{display:flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--ff)}
@@ -505,6 +535,8 @@ html,body{overflow-x:hidden;width:100%}
   .ai-banner-top{flex-direction:column;gap:16px}
   .ai-banner-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .actions-grid{grid-template-columns:1fr}
+  #gmb-location-cards{grid-template-columns:1fr!important}
+  .reviews-kpi-row{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 </style>
 </head>
@@ -990,58 +1022,21 @@ html,body{overflow-x:hidden;width:100%}
       <div class="kpi-trend trend-up">▲ Crecimiento activo</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Vistas del Perfil</div>
-      <div class="kpi-value" id="gmb-kpi-views">—</div>
-      <div class="kpi-sub">Maps + Search · 30 días</div>
-      <div class="kpi-trend trend-neutral" id="gmb-views-split">Maps: — · Search: —</div>
+      <div class="kpi-label">Sucursales Activas</div>
+      <div class="kpi-value" id="gmb-kpi-locations">5</div>
+      <div class="kpi-sub">ubicaciones Nelly RAC</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Acciones del Perfil</div>
-      <div class="kpi-value" id="gmb-kpi-actions">—</div>
-      <div class="kpi-sub">llamadas + clics + dirs · 30d</div>
-      <div class="kpi-trend trend-up" id="gmb-actions-split">— llamadas · — clics · — dirs</div>
+      <div class="kpi-label">Mejor Sucursal</div>
+      <div class="kpi-value" id="gmb-kpi-best" style="font-size:18px">—</div>
+      <div class="kpi-sub" id="gmb-kpi-best-rating">por calificación</div>
     </div>
   </div>
 
-  <div class="grid-65">
-    <div class="card">
-      <div class="card-header-flex">
-        <div class="card-title">Vistas del Perfil — Últimos 90 Días</div>
-        <div id="gmb-views-legend" style="font-size:10px;color:var(--text3)"></div>
-      </div>
-      <div class="gmb-metric-grid" id="gmb-views-breakdown">
-        <div class="gmb-metric">
-          <div class="gmb-metric-val" id="gmb-views-maps">—</div>
-          <div class="gmb-metric-label">📍 Google Maps</div>
-        </div>
-        <div class="gmb-metric">
-          <div class="gmb-metric-val" id="gmb-views-search">—</div>
-          <div class="gmb-metric-label">🔍 Búsqueda</div>
-        </div>
-        <div class="gmb-metric">
-          <div class="gmb-metric-val" id="gmb-views-total-mini">—</div>
-          <div class="gmb-metric-label">📊 Total 30d</div>
-        </div>
-      </div>
-      <div class="chart-wrap" style="height:160px"><canvas id="gmbViewsChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Acciones por Tipo — 30 Días</div>
-      <div class="gmb-metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-        <div class="gmb-metric">
-          <div class="gmb-metric-val" id="gmb-act-calls">—</div>
-          <div class="gmb-metric-label">📞 Llamadas</div>
-        </div>
-        <div class="gmb-metric">
-          <div class="gmb-metric-val" id="gmb-act-web">—</div>
-          <div class="gmb-metric-label">🌐 Web Clics</div>
-        </div>
-        <div class="gmb-metric">
-          <div class="gmb-metric-val" id="gmb-act-dirs">—</div>
-          <div class="gmb-metric-label">🗺️ Direcciones</div>
-        </div>
-      </div>
-      <div class="chart-wrap" style="height:150px"><canvas id="gmbActionsChart"></canvas></div>
+  <!-- Location cards grid -->
+  <div id="gmb-location-cards" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:20px">
+    <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3);font-size:13px">
+      <span style="font-size:28px;display:block;margin-bottom:8px">⏳</span>Cargando perfiles de sucursales…
     </div>
   </div>
 
@@ -2096,18 +2091,21 @@ function renderReviewsList(reviews) {
   const locNames = { independencia:'🏢 Independencia', santiago:'✈️ Santiago', puertoplata:'🌊 Pto. Plata', puntacana:'🌴 Punta Cana', bocachica:'🏖️ Boca Chica' };
   const showLoc = _reviewsState.currentLocId === 'all';
 
-  list.innerHTML = reviews.map(r => {
+  list.innerHTML = reviews.map((r, i) => {
+    const rid     = r.id || `rev-${i}`;
     const stars   = '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars);
     const comment = r.comment
       ? (r.comment.length > 200 ? sanitizeText(r.comment.slice(0,197)) + '…' : sanitizeText(r.comment))
-      : '<em style="color:var(--text3)">Sin comentario escrito</em>';
-    const starColor = colorMap[r.stars] || '#f59e0b';
-    const locBadge  = showLoc && r._locId
+      : '';
+    const rawComment = r.comment || '';
+    const starColor  = colorMap[r.stars] || '#f59e0b';
+    const locBadge   = showLoc && r._locId
       ? `<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text3);margin-left:6px">${locNames[r._locId]||r._locName||''}</span>`
       : '';
-    const replyBadge = r.replied
-      ? `<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:4px">✓ Respondida por el negocio</div>`
-      : `<div style="font-size:10px;color:var(--text3);margin-top:4px">⚠️ Sin respuesta aún</div>`;
+
+    const locNameForReply = r._locName || 'Nelly RAC';
+    const escapedComment  = rawComment.replace(/'/g, "\\'").replace(/"/g, '&quot;').slice(0, 400);
+    const escapedReviewer = (r.reviewer||'Cliente').replace(/'/g, "\\'");
 
     return `<div class="review-item">
       <div class="review-header">
@@ -2118,8 +2116,30 @@ function renderReviewsList(reviews) {
         <span class="review-date">${r.date||''}</span>
       </div>
       <div class="review-stars" style="color:${starColor};font-size:15px;letter-spacing:2px;margin-bottom:5px">${stars}</div>
-      <div class="review-comment">${comment}</div>
-      ${replyBadge}
+      ${comment ? `<div class="review-comment">${comment}</div>` : '<div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-style:italic">Sin comentario escrito</div>'}
+      ${r.replied
+        ? `<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:5px;display:flex;align-items:center;gap:4px">✓ Ya respondida por el negocio</div>`
+        : `<div style="margin-top:6px">
+             <button id="reply-btn-${rid}" onclick="generateReply('${rid}',${r.stars},'${escapedComment}','${escapedReviewer}','${locNameForReply}')"
+               style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--ff);display:inline-flex;align-items:center;gap:5px;transition:all 0.15s"
+               onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'"
+               onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
+               💬 Responder con IA
+             </button>
+           </div>
+           <div id="reply-box-${rid}" class="reply-box" style="display:none;margin-top:8px">
+             <div class="reply-box-header">
+               <span class="reply-box-label">✨ Respuesta generada por IA</span>
+               <span style="font-size:10px;color:#777">Editable · Copia y pega en Google Business</span>
+             </div>
+             <textarea id="reply-text-${rid}" class="reply-textarea" rows="4" placeholder="Generando…"></textarea>
+             <div class="reply-actions">
+               <button class="reply-copy-btn" onclick="copyReply('${rid}')">📋 Copiar respuesta</button>
+               <a href="https://business.google.com/reviews" target="_blank" class="reply-open-btn">🔗 Abrir Google Business</a>
+               <span id="reply-copied-${rid}" class="reply-copied">✓ ¡Copiado!</span>
+             </div>
+           </div>`
+      }
     </div>`;
   }).join('');
 }
@@ -3431,6 +3451,122 @@ function renderActionCards(actions) {
   }).join('');
 }
 
+// ── GMB Location Data (SerpAPI) ───────────────────────────────────────────────
+async function loadGmbData() {
+  try {
+    const r = await fetch('/api/gmb-data');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (data.ok) renderGmbLocationCards(data.locations || []);
+  } catch(e) {
+    const c = document.getElementById('gmb-location-cards');
+    if (c) c.innerHTML = `<div style="grid-column:1/-1;padding:14px;background:#fcebeb;border-radius:8px;font-size:12px;color:var(--red)">⚠️ ${e.message}</div>`;
+  }
+}
+
+function renderGmbLocationCards(locations) {
+  const container = document.getElementById('gmb-location-cards');
+  if (!container) return;
+
+  // Best location by rating
+  const best = locations.filter(l => l.ok && l.rating).sort((a,b) => b.rating - a.rating)[0];
+  if (best) {
+    el('gmb-kpi-best', best.name.split('·')[0].trim());
+    el('gmb-kpi-best-rating', `★ ${best.rating} · ${best.reviewsCount || '—'} reseñas`);
+  }
+
+  const emojis = { independencia:'🏢', santiago:'✈️', puertoplata:'🌊', puntacana:'🌴', bocachica:'🏖️' };
+
+  container.innerHTML = locations.map(loc => {
+    if (!loc.ok) return `
+      <div class="gmb-loc-card">
+        <div class="glc-head">
+          <div class="glc-name">${emojis[loc.id]||'📍'} ${loc.name}</div>
+        </div>
+        <div class="glc-info" style="color:var(--red)">⚠️ ${loc.error || 'Error al cargar'}</div>
+      </div>`;
+
+    const starsHtml = loc.rating
+      ? '★'.repeat(Math.round(loc.rating)) + '☆'.repeat(5 - Math.round(loc.rating))
+      : '';
+    const hoursClass  = loc.isOpenNow === true ? 'hours-open' : loc.isOpenNow === false ? 'hours-closed' : '';
+    const hoursLabel  = loc.isOpenNow === true ? '● Abierto ahora' : loc.isOpenNow === false ? '● Cerrado' : '';
+    const hoursDetail = loc.todayHours ? ` · ${loc.todayHours}` : '';
+
+    return `
+      <div class="gmb-loc-card">
+        <div class="glc-head">
+          <div class="glc-name">${emojis[loc.id]||'📍'} ${loc.name}</div>
+          ${loc.rating ? `<div class="glc-rating">★ ${loc.rating} <span style="font-weight:400;opacity:0.7">(${(loc.reviewsCount||'').toLocaleString()})</span></div>` : ''}
+        </div>
+
+        <div class="glc-info">
+          ${loc.address ? `<span>📍 ${sanitizeText(loc.address)}</span>` : ''}
+          ${loc.phone   ? `<span>📞 ${sanitizeText(loc.phone)}</span>` : ''}
+          ${hoursLabel  ? `<span><span class="glc-hours ${hoursClass}">${hoursLabel}${hoursDetail}</span></span>` : ''}
+          ${loc.photosCount ? `<span>📷 ${loc.photosCount} fotos</span>` : ''}
+        </div>
+
+        <div style="display:flex;gap:5px;font-size:13px;letter-spacing:1px;color:#f59e0b;margin-top:2px">${starsHtml}</div>
+
+        <div class="glc-actions">
+          <a href="${loc.mapsUrl}" target="_blank" class="glc-btn glc-btn-ghost">🗺️ Ver en Maps</a>
+          <a href="${loc.gmbUrl}" target="_blank" class="glc-btn glc-btn-primary">✏️ Gestionar</a>
+          ${loc.website ? `<a href="${loc.website}" target="_blank" class="glc-btn glc-btn-ghost">🌐 Web</a>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── AI Review Reply ───────────────────────────────────────────────────────────
+async function generateReply(reviewId, stars, comment, reviewer, locationName) {
+  const btn      = document.getElementById(`reply-btn-${reviewId}`);
+  const box      = document.getElementById(`reply-box-${reviewId}`);
+  const textarea = document.getElementById(`reply-text-${reviewId}`);
+
+  if (!btn || !box || !textarea) return;
+
+  // Toggle: if box is visible, hide it
+  if (box.style.display === 'block') { box.style.display = 'none'; btn.textContent = '💬 Responder con IA'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando…';
+  box.style.display = 'block';
+  textarea.value = 'Generando respuesta con IA…';
+  textarea.style.color = 'var(--text3)';
+
+  try {
+    const r = await fetch('/api/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewText: comment, stars, reviewerName: reviewer, locationName }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Error al generar');
+    textarea.value = data.reply;
+    textarea.style.color = 'var(--text)';
+  } catch(e) {
+    textarea.value = `Error: ${e.message}`;
+    textarea.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💬 Responder con IA';
+  }
+}
+
+function copyReply(reviewId) {
+  const ta  = document.getElementById(`reply-text-${reviewId}`);
+  const msg = document.getElementById(`reply-copied-${reviewId}`);
+  if (!ta) return;
+  navigator.clipboard.writeText(ta.value).then(() => {
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+  }).catch(() => {
+    ta.select();
+    document.execCommand('copy');
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+  });
+}
+
 // ── PageSpeed ─────────────────────────────────────────────────────────────────
 let psStrategy = 'mobile';
 function setPsStrategy(s, btn) {
@@ -3705,17 +3841,18 @@ function renderOnPageTable(rows) {
 async function bootDashboard() {
   applyStoredConfig();
   const [D, reviews] = await Promise.all([loadData(), loadReviews()]);
-  window._dashData    = D;           // cache for AI Plan (GSC)
-  window._ga4Data     = D.ga4;       // cache for AI Plan (GA4)
-  window._reviewsData = reviews;     // cache for AI Plan (Reviews)
+  window._dashData    = D;
+  window._ga4Data     = D.ga4;
+  window._reviewsData = reviews;
   render(D);
   renderGMB(D.gmb || null);
   renderGA4(D.ga4 || null);
   if (reviews) renderSerpReviews(reviews);
+  loadGmbData(); // load SerpAPI business profile cards
 }
 
 bootDashboard();
 </script>
 </body>
 </html>
-       
+                                                 
