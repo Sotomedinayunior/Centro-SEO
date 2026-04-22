@@ -267,7 +267,7 @@ html,body{overflow-x:hidden;width:100%}
 
 /* ── LOCATION TABS ────────────────────────────────────────────── */
 .loc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.loc-tab{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--ff)}
+.loc-tab{display:flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--ff)}
 .loc-tab:hover{border-color:var(--orange);color:var(--orange)}
 .loc-tab.active{background:var(--darkbg);color:#fff;border-color:var(--darkbg)}
 .loc-tab-rating{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(255,255,255,0.12);color:#fff;margin-left:2px}
@@ -1055,21 +1055,21 @@ html,body{overflow-x:hidden;width:100%}
     <!-- Location tabs -->
     <div class="loc-tabs" id="loc-tabs">
       <button class="loc-tab active" data-locid="all" onclick="switchLocation('all',this)">
-        🗺️ Todas las Sucursales
+         Todas las Sucursales
         <span class="loc-tab-rating" id="lt-rating-all">—</span>
       </button>
       <button class="loc-tab" data-locid="independencia" onclick="switchLocation('independencia',this)">
-        🏢 Independencia
+         Independencia
         <span class="loc-tab-rating" id="lt-rating-independencia">—</span>
         <span class="loc-tab-count" id="lt-count-independencia"></span>
       </button>
       <button class="loc-tab" data-locid="santiago" onclick="switchLocation('santiago',this)">
-        ✈️ Santiago
+         Santiago
         <span class="loc-tab-rating" id="lt-rating-santiago">—</span>
         <span class="loc-tab-count" id="lt-count-santiago"></span>
       </button>
       <button class="loc-tab" data-locid="puertoplata" onclick="switchLocation('puertoplata',this)">
-        🌊 Pto. Plata
+         Pto. Plata
         <span class="loc-tab-rating" id="lt-rating-puertoplata">—</span>
         <span class="loc-tab-count" id="lt-count-puertoplata"></span>
       </button>
@@ -1079,7 +1079,7 @@ html,body{overflow-x:hidden;width:100%}
         <span class="loc-tab-count" id="lt-count-puntacana"></span>
       </button>
       <button class="loc-tab" data-locid="bocachica" onclick="switchLocation('bocachica',this)">
-        🏖️ Boca Chica
+         Las Americas
         <span class="loc-tab-rating" id="lt-rating-bocachica">—</span>
         <span class="loc-tab-count" id="lt-count-bocachica"></span>
       </button>
@@ -1089,7 +1089,7 @@ html,body{overflow-x:hidden;width:100%}
     <div class="reviews-kpi-row" id="reviews-kpi-row">
       <div class="rev-kpi">
         <div class="rev-kpi-val" id="rev-kpi-rating">—</div>
-        <div class="rev-kpi-label">⭐ Calificación</div>
+        <div class="rev-kpi-label"> Calificación</div>
       </div>
       <div class="rev-kpi">
         <div class="rev-kpi-val" id="rev-kpi-total">—</div>
@@ -1097,15 +1097,15 @@ html,body{overflow-x:hidden;width:100%}
       </div>
       <div class="rev-kpi rev-kpi-neg">
         <div class="rev-kpi-val" id="rev-kpi-negative">—</div>
-        <div class="rev-kpi-label">🔴 Negativas 1-2★</div>
+        <div class="rev-kpi-label"> Negativas 1-2★</div>
       </div>
       <div class="rev-kpi rev-kpi-pos">
         <div class="rev-kpi-val" id="rev-kpi-positive">—</div>
-        <div class="rev-kpi-label">🟢 Positivas 4-5★</div>
+        <div class="rev-kpi-label"> Positivas 4-5★</div>
       </div>
       <div class="rev-kpi">
         <div class="rev-kpi-val" id="rev-kpi-replied">—</div>
-        <div class="rev-kpi-label">💬 % Respondidas</div>
+        <div class="rev-kpi-label"> Respondidas</div>
       </div>
     </div>
 
@@ -1953,11 +1953,11 @@ async function switchLocation(locId, btn) {
       return;
     }
 
-    // Use summary data if available
+    // Use summary data if available (already full pages)
     const summaryLoc = _reviewsState.allData?.locations?.find(l => l.id === locId);
     if (summaryLoc) {
       applyLocationData(locId, summaryLoc);
-      showLoadMore();
+      hideLoadMore();
       return;
     }
 
@@ -2943,7 +2943,7 @@ function renderSerpReviews(data) {
     (l.reviews || []).map(r => ({ ...r, _locId: l.id, _locName: l.name }))
   );
   setVisibleReviews(merged);
-  hideLoadMore();
+  hideLoadMore(); // all pages already loaded for each location
 }
 
 // ── GA4 chart state ───────────────────────────────────────────────────────────

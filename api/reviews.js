@@ -14,11 +14,11 @@ const MAX_PAGES = 5;
 
 // ── Sucursales Nelly RAC ──────────────────────────────────────────────────────
 const LOCATIONS = [
-  { id: 'independencia', name: 'Independencia',     emoji: '🏢', placeId: 'ChIJPRzgUXlipY4RTFpdm7Gtz2M' },
-  { id: 'santiago',      name: 'Santiago · Cibao',  emoji: '✈️', placeId: 'ChIJBUNVazXRsY4R76jNG9B5mUQ' },
-  { id: 'puertoplata',   name: 'Puerto Plata',       emoji: '🌊', placeId: 'ChIJNSahrlDksY4RdDGaHelddiY' },
-  { id: 'puntacana',     name: 'Punta Cana',         emoji: '🌴', placeId: 'ChIJPZ6a5d6TqI4R5-DvEC5384M' },
-  { id: 'bocachica',     name: 'Boca Chica',         emoji: '🏖️', placeId: 'ChIJIfF1mPt_pY4RDB9kOOVbvz0' },
+  { id: 'independencia', name: 'Independencia',      placeId: 'ChIJPRzgUXlipY4RTFpdm7Gtz2M' },
+  { id: 'santiago',      name: 'Santiago · Cibao',   placeId: 'ChIJBUNVazXRsY4R76jNG9B5mUQ' },
+  { id: 'puertoplata',   name: 'Puerto Plata',       placeId: 'ChIJNSahrlDksY4RdDGaHelddiY' },
+  { id: 'puntacana',     name: 'Punta Cana',       placeId: 'ChIJPZ6a5d6TqI4R5-DvEC5384M' },
+  { id: 'bocachica',     name: 'Las Americas',      placeId: 'ChIJIfF1mPt_pY4RDB9kOOVbvz0' },
 ];
 
 module.exports = async function handler(req, res) {
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
     // ── Modo: una sucursal específica (todas las páginas) ─────────────────────
     if (placeId) {
       const loc = LOCATIONS.find(l => l.placeId === placeId)
-        || { id: 'custom', name: 'Sucursal', emoji: '📍', placeId };
+        || { id: 'custom', name: 'Sucursal', placeId };
 
       const reviews = await fetchAllPages(placeId, apiKey, MAX_PAGES);
       return res.status(200).json({
@@ -51,7 +51,7 @@ module.exports = async function handler(req, res) {
     const results = await Promise.all(
       LOCATIONS.map(async loc => {
         try {
-          const reviews = await fetchAllPages(loc.placeId, apiKey, 1); // 1 page only
+          const reviews = await fetchAllPages(loc.placeId, apiKey, MAX_PAGES);
           return { ...loc, ...buildStats(reviews), ok: true };
         } catch (err) {
           return { ...loc, ok: false, error: err.message, reviews: [], total: 0, avgRating: null };
