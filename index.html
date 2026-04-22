@@ -429,6 +429,10 @@ html,body{overflow-x:hidden;width:100%}
       <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 12h2V7H1v5zm4 0h2V4H5v8zm4 0h2V9H9v3zm4 0h2V2h-2v10z"/></svg>
       Analytics
     </div>
+    <div class="nav-item" data-page="audit" onclick="showPage('audit',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h3"/></svg>
+      Auditoría
+    </div>
     <div class="nav-label">Estrategia</div>
     <div class="nav-item" data-page="experiments" onclick="showPage('experiments',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/><path d="M4.22 4.22l1.42 1.42M10.36 10.36l1.42 1.42M4.22 11.78l1.42-1.42M10.36 5.64l1.42-1.42"/></svg>
@@ -931,6 +935,87 @@ html,body{overflow-x:hidden;width:100%}
   </div>
 </div>
 
+<!-- =========== PAGE: AUDITORÍA =========== -->
+<div id="page-audit" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Auditoría SEO</div>
+      <div class="page-sub">Redirecciones, errores 404 y velocidad · nellyrac.do</div>
+    </div>
+    <button id="audit-run-btn" onclick="runAudit()" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff)">
+      ▶ Ejecutar Crawl
+    </button>
+  </div>
+
+  <!-- Summary KPIs -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:20px" id="audit-kpis" style="display:none">
+    <div class="kpi-card">
+      <div class="kpi-label">Total URLs</div>
+      <div class="kpi-value" id="audit-total">—</div>
+      <div class="kpi-sub">páginas rastreadas</div>
+    </div>
+    <div class="kpi-card" style="--kc:var(--green)">
+      <div class="kpi-label">✅ OK (200)</div>
+      <div class="kpi-value" id="audit-ok" style="color:var(--green)">—</div>
+      <div class="kpi-sub">responden correctamente</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🔀 Redirecciones</div>
+      <div class="kpi-value" id="audit-redirects" style="color:#378ADD">—</div>
+      <div class="kpi-sub">301 / 302</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">❌ No Encontradas</div>
+      <div class="kpi-value" id="audit-404" style="color:var(--red)">—</div>
+      <div class="kpi-sub">error 404</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🐢 Lentas</div>
+      <div class="kpi-value" id="audit-slow" style="color:var(--orange)">—</div>
+      <div class="kpi-sub">más de 2 segundos</div>
+    </div>
+  </div>
+
+  <!-- Status / Loading -->
+  <div id="audit-status" class="card" style="text-align:center;padding:40px;color:var(--text2)">
+    <div style="font-size:32px;margin-bottom:12px">🔍</div>
+    <div style="font-size:15px;font-weight:600;color:var(--text)">Listo para auditar</div>
+    <div style="font-size:13px;margin-top:6px">Presiona "Ejecutar Crawl" para analizar las 18 páginas de nellyrac.do</div>
+  </div>
+
+  <!-- Filters -->
+  <div id="audit-filters" style="display:none;margin-bottom:14px">
+    <div class="review-filter-tabs">
+      <button class="rf-tab active" onclick="filterAudit('all',this)">Todas <span class="rf-count" id="afc-all"></span></button>
+      <button class="rf-tab" onclick="filterAudit('ok',this)">✅ OK <span class="rf-count" id="afc-ok"></span></button>
+      <button class="rf-tab" onclick="filterAudit('redirect',this)">🔀 Redirecciones <span class="rf-count" id="afc-redir"></span></button>
+      <button class="rf-tab" onclick="filterAudit('error',this)">❌ Errores <span class="rf-count" id="afc-err"></span></button>
+      <button class="rf-tab" onclick="filterAudit('slow',this)">🐢 Lentas <span class="rf-count" id="afc-slow"></span></button>
+    </div>
+  </div>
+
+  <!-- Results table -->
+  <div id="audit-results" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700;width:44px">Estado</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">URL</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700;max-width:200px">Título</th>
+              <th style="text-align:right;padding:10px 14px;color:var(--text2);font-weight:700;width:80px">Tiempo</th>
+              <th style="text-align:left;padding:10px 14px;color:var(--text2);font-weight:700">Redirección a</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:right" id="audit-timestamp"></div>
+  </div>
+</div>
+
 <!-- =========== PAGE: ANALYTICS =========== -->
 <div id="page-analytics" class="page">
   <div class="page-header">
@@ -1059,6 +1144,10 @@ html,body{overflow-x:hidden;width:100%}
   <div class="mobile-nav-item" onclick="showPage('analytics',this)" data-page="analytics">
     <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 12h2V7H1v5zm4 0h2V4H5v8zm4 0h2V9H9v3zm4 0h2V2h-2v10z"/></svg>
     Analytics
+  </div>
+  <div class="mobile-nav-item" onclick="showPage('audit',this)" data-page="audit">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h3"/></svg>
+    Auditoría
   </div>
   <div class="mobile-nav-item" onclick="showPage('experiments',this)" data-page="experiments">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></svg>
@@ -2249,6 +2338,106 @@ function renderGA4(G) {
       </tr>`;
     }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Sin datos de páginas</td></tr>';
   }
+}
+
+// ── Auditoría Crawler ─────────────────────────────────────────────────────────
+let auditAllResults = [];
+
+async function runAudit() {
+  const btn = document.getElementById('audit-run-btn');
+  const status = document.getElementById('audit-status');
+  const filters = document.getElementById('audit-filters');
+  const results = document.getElementById('audit-results');
+  const kpis = document.getElementById('audit-kpis');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Rastreando…';
+  status.style.display = 'block';
+  status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⏳</div><div style="font-size:15px;font-weight:600;color:var(--text)">Rastreando 18 páginas…</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Puede tomar 10-20 segundos</div>`;
+  filters.style.display = 'none';
+  results.style.display = 'none';
+
+  try {
+    const r = await fetch('/api/crawl');
+    if (!r.ok) throw new Error('Error del servidor');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido');
+
+    auditAllResults = data.results || [];
+    const S = data.summary;
+
+    // Update KPIs
+    document.getElementById('audit-total').textContent     = S.total;
+    document.getElementById('audit-ok').textContent        = S.ok;
+    document.getElementById('audit-redirects').textContent = S.redirects;
+    document.getElementById('audit-404').textContent       = S.notFound + (S.errors ? '+'+S.errors : '');
+    document.getElementById('audit-slow').textContent      = S.slow;
+    kpis.style.display = 'grid';
+
+    // Update filter counts
+    document.getElementById('afc-all').textContent  = S.total;
+    document.getElementById('afc-ok').textContent   = S.ok;
+    document.getElementById('afc-redir').textContent= S.redirects;
+    document.getElementById('afc-err').textContent  = S.notFound + S.errors;
+    document.getElementById('afc-slow').textContent = S.slow;
+
+    // Timestamp
+    document.getElementById('audit-timestamp').textContent =
+      'Último crawl: ' + new Date(data.crawledAt).toLocaleString('es-DO');
+
+    status.style.display = 'none';
+    filters.style.display = 'block';
+    results.style.display = 'block';
+    renderAuditTable(auditAllResults);
+
+  } catch(e) {
+    status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⚠️</div><div style="font-size:15px;font-weight:600;color:var(--red)">Error al rastrear</div><div style="font-size:13px;color:var(--text2);margin-top:6px">${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Ejecutar Crawl';
+  }
+}
+
+function filterAudit(type, btn) {
+  document.querySelectorAll('#audit-filters .rf-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered = auditAllResults;
+  if (type === 'ok')       filtered = auditAllResults.filter(r => r.status === 200);
+  if (type === 'redirect') filtered = auditAllResults.filter(r => r.status >= 300 && r.status < 400);
+  if (type === 'error')    filtered = auditAllResults.filter(r => r.status >= 400 || r.status === 0);
+  if (type === 'slow')     filtered = auditAllResults.filter(r => r.ms > 2000);
+  renderAuditTable(filtered);
+}
+
+function renderAuditTable(rows) {
+  const tbody = document.getElementById('audit-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text3)">Sin resultados en esta categoría</td></tr>';
+    return;
+  }
+  const statusBadge = r => {
+    if (r.error)                          return `<span style="background:#2a1515;color:#f87171;padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">ERR</span>`;
+    if (r.status === 200 && r.ms <= 2000) return `<span style="background:#e8f5ee;color:var(--green);padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">200</span>`;
+    if (r.status === 200 && r.ms > 2000)  return `<span style="background:#fff0e6;color:var(--orange);padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">200🐢</span>`;
+    if (r.status === 301)                 return `<span style="background:#e6f1fb;color:#378ADD;padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">301</span>`;
+    if (r.status === 302)                 return `<span style="background:#e6f1fb;color:#378ADD;padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">302</span>`;
+    if (r.status === 404)                 return `<span style="background:#2a1515;color:#f87171;padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">404</span>`;
+    return `<span style="background:#f5f5f5;color:#666;padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px">${r.status||'?'}</span>`;
+  };
+  const shortUrl = u => u.replace('https://nellyrac.do','') || '/';
+  const msColor  = ms => ms > 3000 ? 'var(--red)' : ms > 2000 ? 'var(--orange)' : 'var(--green)';
+
+  tbody.innerHTML = rows.map(r => `
+    <tr style="border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px">${statusBadge(r)}</td>
+      <td style="padding:10px 14px;max-width:260px">
+        <a href="${r.url}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.url}">${shortUrl(r.url)}</a>
+        ${r.error ? `<span style="font-size:10px;color:var(--red)">${r.error}</span>` : ''}
+      </td>
+      <td style="padding:10px 14px;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.title || '—'}</td>
+      <td style="padding:10px 14px;text-align:right;font-weight:600;color:${msColor(r.ms)}">${r.ms ? r.ms+'ms' : '—'}</td>
+      <td style="padding:10px 14px;color:#378ADD;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.location ? r.location.replace('https://nellyrac.do','') : '—'}</td>
+    </tr>`).join('');
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
