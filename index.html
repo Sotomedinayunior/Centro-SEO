@@ -3043,9 +3043,19 @@ function renderAIPlan(data) {
     }
   }
 
-  // Diagnosis
+  // Diagnosis — render with highlighted first sentence
   const diagEl = document.getElementById('aiplan-diagnosis-text');
-  if (diagEl) diagEl.textContent = plan.diagnosis || '—';
+  if (diagEl) {
+    const raw = plan.diagnosis || '—';
+    // Split into sentences and style the first one bigger
+    const sentences = raw.split(/(?<=[.!?])\s+/);
+    if (sentences.length > 1) {
+      diagEl.innerHTML = `<span style="font-size:14px;color:#e8e8e8;font-weight:500">${sanitizeText(sentences[0])}</span> `
+        + `<span style="color:#aaa">${sanitizeText(sentences.slice(1).join(' '))}</span>`;
+    } else {
+      diagEl.innerHTML = `<span style="font-size:14px;color:#e8e8e8;font-weight:500">${sanitizeText(raw)}</span>`;
+    }
+  }
 
   // Stats
   const alta  = aiPlanAllActions.filter(a => a.priority === 'alta').length;
