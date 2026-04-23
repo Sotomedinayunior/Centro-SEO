@@ -1030,8 +1030,8 @@ html,body{overflow-x:hidden;width:100%}
   <div class="kpi-sub">ubicaciones Nelly RAC</div>
   </div>
   <div class="kpi-card">
-  <div class="kpi-label">Mejor Sucursal</div>
-  <div class="kpi-value" id="gmb-kpi-best" style="font-size:18px">—</div>
+  <div class="kpi-label">Mejor Desempeño</div>
+  <div class="kpi-value" id="gmb-kpi-best" style="font-size:16px;line-height:1.2">—</div>
   <div class="kpi-sub" id="gmb-kpi-best-rating">por calificación</div>
   </div>
   </div>
@@ -1899,6 +1899,25 @@ async function loadData() {
 // Helper: sanitize text for safe HTML insertion 
 function sanitizeText(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Extract the location-specific part of a Google Business name,
+// stripping common brand prefixes like "Nelly RAC", "Nelly Rent A Car", etc.
+function shortLocName(fullName) {
+  if (!fullName) return '—';
+  // Strip brand prefix (case-insensitive): "Nelly RAC", "Nelly Rent A Car", "Nelly Rent-A-Car", "Nelly"
+  let name = fullName
+    .replace(/^nelly\s+rent[\s\-]?a[\s\-]?car[\s\-]*/i, '')
+    .replace(/^nelly\s+rac[\s\-]*/i, '')
+    .replace(/^nelly[\s\-]*/i, '');
+  // If separator " - " or " · " present, take what's after it
+  const dashIdx = name.indexOf(' - ');
+  if (dashIdx !== -1) name = name.slice(dashIdx + 3);
+  const dotIdx = name.indexOf(' · ');
+  if (dotIdx !== -1) name = name.slice(dotIdx + 3);
+  name = name.trim();
+  // If nothing left, fall back to full name
+  return name || fullName;
 }
 
 // Reviews multi-location state 
@@ -3504,7 +3523,7 @@ function renderGmbLocationCards(locations) {
   // Best location by rating
   const best = ok.slice().sort((a,b) => b.rating - a.rating)[0];
   if (best) {
-  el('gmb-kpi-best', best.name.split('·')[0].trim());
+  el('gmb-kpi-best', shortLocName(best.name));
   el('gmb-kpi-best-rating', ` ${best.rating} · ${best.reviewsCount || '—'} reseñas`);
   }
 
@@ -3531,7 +3550,7 @@ function renderGmbLocationCards(locations) {
   if (!loc.ok) return `
   <div class="gmb-loc-card">
   <div class="glc-head">
-  <div class="glc-name">${emojis[loc.id]||''} ${loc.name}</div>
+  <div class="glc-name">${emojis[loc.id]||''} ${shortLocName(loc.name)}</div>
   </div>
   <div class="glc-info" style="color:var(--red)"> ${loc.error || 'Error al cargar'}</div>
   </div>`;
@@ -3546,7 +3565,7 @@ function renderGmbLocationCards(locations) {
   return `
   <div class="gmb-loc-card">
   <div class="glc-head">
-  <div class="glc-name">${emojis[loc.id]||''} ${loc.name}</div>
+  <div class="glc-name">${emojis[loc.id]||''} ${shortLocName(loc.name)}</div>
   ${loc.rating ? `<div class="glc-rating"> ${loc.rating} <span style="font-weight:400;opacity:0.7">(${(loc.reviewsCount||'').toLocaleString()})</span></div>` : ''}
   </div>
 
