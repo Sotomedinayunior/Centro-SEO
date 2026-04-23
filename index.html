@@ -6,6 +6,7 @@
 <title id="page-title">Growth Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1030,8 +1031,15 @@ html,body{overflow-x:hidden;width:100%}
   <div class="kpi-sub">ubicaciones Nelly RAC</div>
   </div>
   <div class="kpi-card">
-  <div class="kpi-label">Mejor Desempeño</div>
+  <div class="kpi-label" style="display:flex;align-items:center;gap:5px">
+    <i data-lucide="trophy" style="width:13px;height:13px;color:var(--orange);flex-shrink:0"></i>
+    Mejor Desempeño
+  </div>
   <div class="kpi-value" id="gmb-kpi-best" style="font-size:16px;line-height:1.2">—</div>
+  <div id="gmb-kpi-best-city" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px;margin-top:2px;display:none">
+    <i data-lucide="map-pin" style="width:11px;height:11px;color:var(--orange);flex-shrink:0"></i>
+    <span id="gmb-kpi-best-city-text"></span>
+  </div>
   <div class="kpi-sub" id="gmb-kpi-best-rating">por calificación</div>
   </div>
   </div>
@@ -3524,8 +3532,16 @@ function renderGmbLocationCards(locations) {
   // Best location by rating
   const best = ok.slice().sort((a,b) => b.rating - a.rating)[0];
   if (best) {
-  el('gmb-kpi-best', shortLocName(best.name));
-  el('gmb-kpi-best-rating', ` ${best.rating} · ${best.reviewsCount || '—'} reseñas`);
+    el('gmb-kpi-best', shortLocName(best.name));
+    el('gmb-kpi-best-rating', `⭐ ${best.rating} · ${best.reviewsCount || '—'} reseñas`);
+    // Show city if available
+    const cityWrap = document.getElementById('gmb-kpi-best-city');
+    const cityText = document.getElementById('gmb-kpi-best-city-text');
+    if (best.address && cityWrap && cityText) {
+      cityText.textContent = best.address;
+      cityWrap.style.display = 'flex';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
   }
 
   // Aggregate rating + review count from SerpAPI data
@@ -3545,47 +3561,59 @@ function renderGmbLocationCards(locations) {
   }
   }
 
-  const emojis = { independencia:'', santiago:'', puertoplata:'', puntacana:'', bocachica:'' };
+  // Ícono SVG inline via Lucide (CDN) — se reemplaza tras insertar el HTML
+  const ic = (name, size=13, color='currentColor') =>
+    `<svg data-lucide="${name}" style="width:${size}px;height:${size}px;color:${color};flex-shrink:0;display:inline-block;vertical-align:middle"></svg>`;
 
   container.innerHTML = locations.map(loc => {
   if (!loc.ok) return `
   <div class="gmb-loc-card">
   <div class="glc-head">
-  <div class="glc-name">${emojis[loc.id]||''} ${shortLocName(loc.name)}</div>
+  <div class="glc-name" style="display:flex;align-items:center;gap:6px">
+    ${ic('map-pin',14,'var(--orange)')} ${shortLocName(loc.name)}
   </div>
-  <div class="glc-info" style="color:var(--red)"> ${loc.error || 'Error al cargar'}</div>
+  </div>
+  <div class="glc-info" style="color:var(--red);display:flex;align-items:center;gap:5px">
+    ${ic('alert-circle',12,'var(--red)')} ${loc.error || 'Error al cargar'}
+  </div>
   </div>`;
 
   const starsHtml = loc.rating
-  ? ''.repeat(Math.round(loc.rating)) + ''.repeat(5 - Math.round(loc.rating))
-  : '';
-  const hoursClass = loc.isOpenNow === true ? 'hours-open' : loc.isOpenNow === false ? 'hours-closed' : '';
-  const hoursLabel = loc.isOpenNow === true ? ' Abierto ahora' : loc.isOpenNow === false ? ' Cerrado' : '';
+    ? '⭐'.repeat(Math.round(loc.rating))
+    : '';
+  const hoursClass  = loc.isOpenNow === true ? 'hours-open' : loc.isOpenNow === false ? 'hours-closed' : '';
+  const hoursIcon   = loc.isOpenNow === true ? ic('clock',11,'#16a34a') : loc.isOpenNow === false ? ic('clock',11,'var(--red)') : ic('clock',11,'var(--text3)');
+  const hoursLabel  = loc.isOpenNow === true ? 'Abierto ahora' : loc.isOpenNow === false ? 'Cerrado' : '';
   const hoursDetail = loc.todayHours ? ` · ${loc.todayHours}` : '';
 
   return `
   <div class="gmb-loc-card">
   <div class="glc-head">
-  <div class="glc-name">${emojis[loc.id]||''} ${shortLocName(loc.name)}</div>
-  ${loc.rating ? `<div class="glc-rating"> ${loc.rating} <span style="font-weight:400;opacity:0.7">(${(loc.reviewsCount||'').toLocaleString()})</span></div>` : ''}
+  <div class="glc-name" style="display:flex;align-items:center;gap:6px">
+    ${ic('map-pin',14,'var(--orange)')} ${shortLocName(loc.name)}
+  </div>
+  ${loc.rating ? `<div class="glc-rating">${loc.rating} <span style="font-weight:400;opacity:0.7">(${(loc.reviewsCount||0).toLocaleString()})</span></div>` : ''}
   </div>
 
-  <div class="glc-info">
-  ${loc.address ? `<span> ${sanitizeText(loc.address)}</span>` : ''}
-  ${loc.phone ? `<span> ${sanitizeText(loc.phone)}</span>` : ''}
-  ${hoursLabel ? `<span><span class="glc-hours ${hoursClass}">${hoursLabel}${hoursDetail}</span></span>` : ''}
-  ${loc.photosCount ? `<span> ${loc.photosCount} fotos</span>` : ''}
+  <div class="glc-info" style="display:flex;flex-direction:column;gap:4px">
+  ${loc.address ? `<span style="display:flex;align-items:center;gap:5px">${ic('navigation',11,'var(--text3)')} ${sanitizeText(loc.address)}</span>` : ''}
+  ${loc.phone   ? `<span style="display:flex;align-items:center;gap:5px">${ic('phone',11,'var(--text3)')} ${sanitizeText(loc.phone)}</span>` : ''}
+  ${hoursLabel  ? `<span style="display:flex;align-items:center;gap:5px">${hoursIcon} <span class="glc-hours ${hoursClass}">${hoursLabel}${hoursDetail}</span></span>` : ''}
+  ${loc.photosCount ? `<span style="display:flex;align-items:center;gap:5px">${ic('image',11,'var(--text3)')} ${loc.photosCount} fotos</span>` : ''}
   </div>
 
-  <div style="display:flex;gap:5px;font-size:13px;letter-spacing:1px;color:#f59e0b;margin-top:2px">${starsHtml}</div>
+  <div style="font-size:13px;letter-spacing:1px;margin-top:4px">${starsHtml}</div>
 
   <div class="glc-actions">
-  <a href="${loc.mapsUrl}" target="_blank" class="glc-btn glc-btn-ghost"> Ver en Maps</a>
-  <a href="${loc.gmbUrl}" target="_blank" class="glc-btn glc-btn-primary"> Gestionar</a>
-  ${loc.website ? `<a href="${loc.website}" target="_blank" class="glc-btn glc-btn-ghost"> Web</a>` : ''}
+  <a href="${loc.mapsUrl}" target="_blank" class="glc-btn glc-btn-ghost" style="display:flex;align-items:center;gap:4px">${ic('map',11)} Ver en Maps</a>
+  <a href="${loc.gmbUrl}"  target="_blank" class="glc-btn glc-btn-primary" style="display:flex;align-items:center;gap:4px">${ic('settings',11,'#fff')} Gestionar</a>
+  ${loc.website ? `<a href="${loc.website}" target="_blank" class="glc-btn glc-btn-ghost" style="display:flex;align-items:center;gap:4px">${ic('globe',11)} Web</a>` : ''}
   </div>
   </div>`;
   }).join('');
+
+  // Activar todos los íconos Lucide recién insertados
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // ── Review reply helpers ──────────────────────────────────────────────────────
@@ -4249,9 +4277,12 @@ function initSidebarTourBtn() {
 // Init after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarTourBtn();
+  // Inicializar íconos Lucide del DOM estático (header KPI cards, etc.)
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 });
 if (document.readyState !== 'loading') {
   initSidebarTourBtn();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 </script>
