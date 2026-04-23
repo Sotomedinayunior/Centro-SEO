@@ -3518,17 +3518,24 @@ function renderGmbLocationCards(locations) {
 
   const ok = locations.filter(l => l.ok && l.rating);
 
-  // Sync real Google Business names into tab labels and REVIEW_LOCATIONS
-  // Always use shortLocName() to strip "Nelly Rent A Car" prefix
+  // Sync names into tab labels and REVIEW_LOCATIONS.
+  // SerpAPI a veces devuelve solo "Nelly Rent A Car" sin sufijo de sucursal.
+  // En ese caso, shortLocName() no puede extraer nada útil y devuelve el nombre
+  // completo del negocio — así que preferimos conservar el nombre original de
+  // REVIEW_LOCATIONS (ej. "Independencia") que ya es correcto.
   locations.forEach(loc => {
     if (!loc.name) return;
-    const cleanName = shortLocName(loc.name);
+    const rl = REVIEW_LOCATIONS.find(r => r.id === loc.id);
+    const cleaned = shortLocName(loc.name);
+    // Solo reemplazar si shortLocName extrajo algo diferente al nombre completo
+    // (es decir, si hay un sufijo de ubicación real, ej. "Independencia")
+    const hasLocationSuffix = cleaned !== loc.name && cleaned.length > 0;
+    const finalName = hasLocationSuffix ? cleaned : (rl?.name || cleaned);
     // Update tab label
     const nameEl = document.getElementById(`lt-name-${loc.id}`);
-    if (nameEl) nameEl.textContent = cleanName;
-    // Update REVIEW_LOCATIONS in memory so reply IA and review badges use clean name
-    const rl = REVIEW_LOCATIONS.find(r => r.id === loc.id);
-    if (rl) rl.name = cleanName;
+    if (nameEl) nameEl.textContent = finalName;
+    // Update REVIEW_LOCATIONS in memory
+    if (rl) rl.name = finalName;
   });
 
   // Best location by rating
