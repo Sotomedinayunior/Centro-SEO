@@ -98,10 +98,11 @@ async function fetchAllPages(placeId, apiKey, maxPages) {
   api_key: apiKey,
   hl: 'es',
   sort_by: 'newestFirst',
-  num: '20',   // pedir 20 reviews por página (primera y siguientes)
+  // num solo se usa en páginas 2+ (SerpAPI ignora num en la primera página)
   });
   if (nextPageToken) {
   params.set('next_page_token', nextPageToken);
+  params.set('num', '20');
   }
 
   const r = await fetch(`https://serpapi.com/search.json?${params}`, {
