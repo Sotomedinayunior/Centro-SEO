@@ -243,8 +243,8 @@ html,body{overflow-x:hidden;width:100%}
 .setup-skip:hover{color:#888}
 .setup-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
 /* Reset button in sidebar */
-.sidebar-reset{font-size:10px;color:#444;cursor:pointer;margin-top:8px;display:block}
-.sidebar-reset:hover{color:#E8610A}
+.sidebar-reset{font-size:11px;font-weight:700;color:#fff;cursor:pointer;margin-top:10px;display:block;background:var(--orange);border:none;border-radius:8px;padding:7px 14px;text-align:center;font-family:var(--ff);letter-spacing:0.3px;transition:opacity 0.15s}
+.sidebar-reset:hover{opacity:0.85}
 
 @media(max-width:1200px){
   .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -626,7 +626,7 @@ html,body{overflow-x:hidden;width:100%}
   <div class="page-title">Panorama General</div>
   <div class="page-sub" id="overview-sub">Google Search Console · Últimos 6 meses</div>
   </div>
-  <div class="header-badge" id="overview-badge"> Cargando datos…</div>
+  <div class="header-badge" id="overview-badge" style="display:none"></div>
   </div>
 
   <div class="kpi-grid">
@@ -1229,7 +1229,7 @@ html,body{overflow-x:hidden;width:100%}
   <div class="page-title">Analytics</div>
   <div class="page-sub">Google Analytics 4 · Últimos 6 meses</div>
   </div>
-  <div class="header-badge" id="ga4-badge"> Cargando…</div>
+  <div class="header-badge" id="ga4-badge" style="display:none"></div>
   </div>
 
   <!-- Not configured banner -->
@@ -1871,8 +1871,7 @@ function applyStoredConfig() {
   SITE_CONFIG = { siteName: name, siteUrl: site, gscProperty: site+'/', configured: true, gmbConfigured: true };
   el('logo-site-name', 'Nelly RAC');
   document.getElementById('page-title').textContent = 'Nelly RAC — Growth Dashboard';
-  const badge = document.getElementById('overview-badge');
-  if (badge) { badge.textContent = ' Datos en vivo'; badge.style.color = '#27a663'; }
+  // overview-badge hidden by design
   const sb = document.getElementById('sidebar-status');
   if (sb) sb.innerHTML = `<strong>${name}</strong> nellyrac.do`;
   try {
@@ -2108,10 +2107,13 @@ function renderReviewsList(reviews) {
   : '';
 
   const locNameForReply = (r._locId ? locNames[r._locId] : null) || r._locName || 'Nelly RAC';
-  const escapedComment = rawComment.replace(/'/g, "\\'").replace(/"/g, '&quot;').slice(0, 400);
+  // placeId for direct posting: look up from REVIEW_LOCATIONS by _locId
+  const placeIdForPost  = (r._locId ? (REVIEW_LOCATIONS.find(l => l.id === r._locId)?.placeId || '') : '');
+  const googleReviewId  = r.id || '';
+  const escapedComment  = rawComment.replace(/'/g, "\\'").replace(/"/g, '&quot;').slice(0, 400);
   const escapedReviewer = (r.reviewer||'Cliente').replace(/'/g, "\\'");
 
-  return `<div class="review-item">
+  return `<div class="review-item" id="review-item-${rid}">
   <div class="review-header">
   <span style="display:flex;align-items:center;flex-wrap:wrap;gap:2px">
   <span class="review-author">${sanitizeText(r.reviewer||'Anónimo')}</span>
@@ -2122,7 +2124,7 @@ function renderReviewsList(reviews) {
   <div class="review-stars" style="color:${starColor};font-size:15px;letter-spacing:2px;margin-bottom:5px">${stars}</div>
   ${comment ? `<div class="review-comment">${comment}</div>` : '<div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-style:italic">Sin comentario escrito</div>'}
   ${r.replied
-  ? `<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:5px;display:flex;align-items:center;gap:4px"> Ya respondida por el negocio</div>`
+  ? `<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:5px;display:flex;align-items:center;gap:4px">Respondida por el negocio</div>`
   : `<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
   <button id="reply-btn-${rid}" onclick="generateReply('${rid}',${r.stars},'${escapedComment}','${escapedReviewer}','${locNameForReply}')"
   style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--ff);display:inline-flex;align-items:center;gap:5px;transition:all 0.15s"
@@ -2134,19 +2136,24 @@ function renderReviewsList(reviews) {
   style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--ff);display:inline-flex;align-items:center;gap:5px;transition:all 0.15s"
   onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
   onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
-  Responder
+  Escribir manual
   </button>
   </div>
   <div id="reply-box-${rid}" class="reply-box" style="display:none;margin-top:8px">
   <div class="reply-box-header">
   <span class="reply-box-label" id="reply-mode-label-${rid}">Respuesta</span>
-  <span style="font-size:10px;color:#777">Editable · Copia y pega en Google Business</span>
+  <span style="font-size:10px;color:#777">Editable antes de publicar</span>
   </div>
   <textarea id="reply-text-${rid}" class="reply-textarea" rows="4" placeholder="Escribe tu respuesta aquí…"></textarea>
   <div class="reply-actions">
-  <button class="reply-copy-btn" onclick="copyReply('${rid}')">Copiar respuesta</button>
-  <a href="https://business.google.com/reviews" target="_blank" class="reply-open-btn">Abrir Google Business</a>
+  <button class="reply-copy-btn" onclick="copyReply('${rid}')">Copiar</button>
+  <button id="reply-publish-btn-${rid}" class="reply-open-btn"
+    style="cursor:pointer;border:none;background:var(--orange);color:#fff;font-weight:700"
+    onclick="publishReply('${rid}','${placeIdForPost}','${googleReviewId}')">
+    Publicar en Google
+  </button>
   <span id="reply-copied-${rid}" class="reply-copied">Copiado</span>
+  <span id="reply-status-${rid}" style="font-size:11px;margin-left:4px"></span>
   </div>
   </div>`
   }
@@ -2317,10 +2324,9 @@ function render(D) {
 
   // Sidebar status
   const upd = D.meta?.updated_at || '—';
-  const src = D.meta?.source === 'live' ? ' En vivo' : ' Demo';
   const sb = document.getElementById('sidebar-status');
   if (sb) sb.innerHTML =
-  `<strong>${src} · ${upd}</strong>` +
+  `<strong>${SITE_CONFIG.siteName || 'Nelly RAC'}</strong><br>` +
   (SITE_CONFIG.siteUrl ? SITE_CONFIG.siteUrl.replace(/^https?:\/\//,'')+'<br>' : '') +
   `GSC · ${s.days || 0} días · ${(s.total_clicks||0).toLocaleString()} clics`;
 
@@ -2771,12 +2777,7 @@ function renderGMB(G) {
   if (notConf) notConf.style.display = G.configured ? 'none' : 'block';
 
   // Status badge
-  const badge = document.getElementById('gmb-status-badge');
-  if (badge) {
-  badge.textContent = G.configured ? ' En vivo' : ' Demo';
-  badge.style.display = 'block';
-  badge.style.color = G.configured ? '#27a663' : '#999';
-  }
+  // gmb-status-badge hidden by design
 
   // Rating
   if (G.rating !== null) {
@@ -3000,7 +3001,7 @@ function renderGA4(G) {
   const badge = document.getElementById('ga4-badge');
   if (!G || !G.configured) {
   if (notConf) notConf.style.display = 'block';
-  if (badge) { badge.textContent = ' Sin datos'; badge.style.color = '#e86a0a'; }
+  // ga4-badge hidden by design
   // Show actual error if available
   if (G?.error) {
   const titleEl = document.getElementById('ga4-error-title');
@@ -3013,7 +3014,7 @@ function renderGA4(G) {
   return;
   }
   if (notConf) notConf.style.display = 'none';
-  if (badge) { badge.textContent = ' En vivo'; badge.style.color = '#27a663'; }
+  // ga4-badge hidden by design
 
   GA4_DATA = G;
   const S = G.summary || {};
@@ -3653,12 +3654,68 @@ function copyReply(reviewId) {
   const msg = document.getElementById(`reply-copied-${reviewId}`);
   if (!ta) return;
   navigator.clipboard.writeText(ta.value).then(() => {
-  if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
   }).catch(() => {
-  ta.select();
-  document.execCommand('copy');
-  if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+    ta.select();
+    document.execCommand('copy');
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
   });
+}
+
+// ── Publish reply directly to Google Business ─────────────────────────────────
+async function publishReply(domId, placeId, googleReviewId) {
+  const textarea   = document.getElementById(`reply-text-${domId}`);
+  const btn        = document.getElementById(`reply-publish-btn-${domId}`);
+  const statusEl   = document.getElementById(`reply-status-${domId}`);
+  const reviewItem = document.getElementById(`review-item-${domId}`);
+
+  if (!textarea || !btn) return;
+
+  const replyText = textarea.value.trim();
+  if (!replyText) { statusEl.textContent = 'Escribe una respuesta antes de publicar.'; statusEl.style.color = 'var(--red)'; return; }
+  if (!placeId)   { statusEl.textContent = 'No se pudo identificar la sucursal.'; statusEl.style.color = 'var(--red)'; return; }
+  if (!googleReviewId) { statusEl.textContent = 'ID de reseña no disponible. Usa "Copiar" y pega en Google Business.'; statusEl.style.color = 'var(--red)'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Publicando…';
+  if (statusEl) { statusEl.textContent = ''; }
+
+  try {
+    const r = await fetch('/api/post-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placeId, reviewId: googleReviewId, replyText }),
+    });
+    const data = await r.json();
+
+    if (!data.ok) throw new Error(data.error || 'Error al publicar');
+
+    // Success — mark review as replied in the UI
+    btn.textContent = 'Publicado';
+    btn.style.background = 'var(--green)';
+    btn.disabled = true;
+    if (statusEl) { statusEl.textContent = 'Respuesta publicada en Google.'; statusEl.style.color = 'var(--green)'; }
+
+    // After 2 seconds, show "replied" badge and hide reply box
+    setTimeout(() => {
+      const box = document.getElementById(`reply-box-${domId}`);
+      if (box) box.style.display = 'none';
+      // Replace action buttons with "replied" indicator
+      const actionsDiv = reviewItem?.querySelector('.reply-actions')?.closest('div[style*="margin-top:6px"]');
+      if (actionsDiv) {
+        actionsDiv.innerHTML = '<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:5px">Respondida por el negocio</div>';
+      }
+    }, 2000);
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Publicar en Google';
+    btn.style.background = '';
+    if (statusEl) {
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = e.message;
+    }
+  }
 }
 
 // PageSpeed 
@@ -3961,13 +4018,6 @@ bootDashboard();
 // 
 
 const TOUR_CSS = `
-.tour-help-btn {
-  display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
-  background:transparent;border:1px solid var(--border2);border-radius:20px;
-  font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;
-  font-family:var(--ff);transition:all 0.15s;white-space:nowrap;
-}
-.tour-help-btn:hover { background:rgba(232,97,10,0.1);border-color:var(--orange);color:var(--orange); }
 .driver-popover { font-family: var(--ff) !important; }
 .driver-popover-title { font-size: 14px !important; font-weight: 700 !important; }
 .driver-popover-description { font-size: 12px !important; line-height: 1.6 !important; color: #ccc !important; }
@@ -4121,26 +4171,7 @@ function startTour(pageId) {
 }
 
 // Inyectar botones de tour en cada page-header 
-function initTourButtons() {
-  Object.keys(TOURS).forEach(pageId => {
-  const page = document.getElementById(`page-${pageId}`);
-  if (!page) return;
-  const header = page.querySelector('.page-header');
-  if (!header) return;
-
-  // Don't add if there's already a tour button
-  if (header.querySelector('.tour-help-btn')) return;
-
-  const btn = document.createElement('button');
-  btn.className = 'tour-help-btn';
-  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.507 6.507 0 0 0 8 1.5zM0 8a8 8 0 1 1 8 8A8 8 0 0 1 0 8z"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg> Tour`;
-  btn.title = `Iniciar tour de esta sección`;
-  btn.onclick = () => startTour(pageId);
-  header.appendChild(btn);
-  });
-}
-
-// Botón global en sidebar 
+// Botón en sidebar solamente
 function initSidebarTourBtn() {
   const nav = document.querySelector('.sidebar-nav');
   if (!nav) return;
@@ -4166,12 +4197,9 @@ function initSidebarTourBtn() {
 
 // Init after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  initTourButtons();
   initSidebarTourBtn();
 });
-// Also init immediately in case DOMContentLoaded already fired
 if (document.readyState !== 'loading') {
-  initTourButtons();
   initSidebarTourBtn();
 }
 
