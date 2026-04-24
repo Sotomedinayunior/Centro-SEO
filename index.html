@@ -4844,3 +4844,10 @@ function filterGlossary(q) {
   });
   document.querySelectorAll('.gloss-section').forEach(section => {
     const visible = [...section.querySelectorAll('.gloss-card')].some(c => c.style.display !== 'none')
+    section.style.display = visible ? '' : 'none';
+  });
+}
+
+</script>
+</body>
+</html>
