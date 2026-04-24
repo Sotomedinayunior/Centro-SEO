@@ -4397,122 +4397,121 @@ bootDashboard();
 // 
 
 const TOUR_CSS = `
-/* ── Overlay: completely transparent ── */
+/* ── Sin overlay oscuro ── */
 .driver-overlay { background: transparent !important; }
 
-/* ── Highlight border only — no dark backdrop ── */
+/* ── Borde naranja en elemento resaltado ── */
 .driver-active-element,
 .driver-highlighted-element {
-  outline: 2.5px solid #F26722 !important;
-  outline-offset: 5px !important;
+  outline: 2px solid #F26722 !important;
+  outline-offset: 4px !important;
   border-radius: 8px !important;
-  box-shadow: 0 0 0 5px rgba(242,103,34,0.15) !important;
-  position: relative !important;
-  z-index: 10000 !important;
+  box-shadow: 0 0 0 5px rgba(242,103,34,0.12) !important;
 }
 
-/* ── Popover shell ── */
+/* ── Popover principal ── */
 .driver-popover.driverjs-theme {
-  background: #18181b !important;
-  border: 1px solid rgba(242,103,34,0.35) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(242,103,34,0.1) !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  min-width: 320px !important;
-  max-width: 380px !important;
+  background: #1c1c1f !important;
+  border: 1px solid rgba(242,103,34,0.3) !important;
+  border-top: 3px solid #F26722 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.65) !important;
+  min-width: 340px !important;
+  max-width: 400px !important;
+  padding: 20px 24px 16px !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif !important;
+  box-sizing: border-box !important;
 }
 
-/* ── Color bar accent on top ── */
-.driver-popover.driverjs-theme::before {
-  content: '' !important;
-  display: block !important;
-  height: 3px !important;
-  background: linear-gradient(90deg, #F26722, #ff9a5c) !important;
-}
-
-/* ── Header area ── */
+/* ── Header ── */
 .driver-popover-header {
-  padding: 20px 22px 0 22px !important;
   display: flex !important;
   align-items: flex-start !important;
   justify-content: space-between !important;
-  gap: 10px !important;
+  gap: 12px !important;
+  padding: 0 0 10px 0 !important;
+  margin-bottom: 0 !important;
 }
 
-/* ── Title ── */
+/* ── Título ── */
 .driver-popover-title {
   font-size: 14px !important;
   font-weight: 700 !important;
-  color: #fff !important;
-  line-height: 1.3 !important;
+  color: #ffffff !important;
+  line-height: 1.35 !important;
   margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* ── Close button ── */
+/* ── Botón cerrar ── */
 .driver-popover-close-btn {
-  color: #555 !important;
-  font-size: 18px !important;
-  line-height: 1 !important;
+  color: #666 !important;
+  font-size: 16px !important;
   background: none !important;
   border: none !important;
   cursor: pointer !important;
-  padding: 0 !important;
+  padding: 2px 4px !important;
   flex-shrink: 0 !important;
+  border-radius: 4px !important;
+  line-height: 1 !important;
   transition: color 0.15s !important;
 }
 .driver-popover-close-btn:hover { color: #F26722 !important; }
 
-/* ── Description ── */
+/* ── Descripción ── */
 .driver-popover-description {
   font-size: 13px !important;
-  line-height: 1.7 !important;
-  color: #bbb !important;
-  padding: 12px 22px 20px 22px !important;
-  margin: 0 !important;
+  line-height: 1.75 !important;
+  color: #c0c0c8 !important;
+  margin: 0 0 16px 0 !important;
+  padding: 0 !important;
 }
 
-/* ── Footer / buttons area ── */
+/* ── Footer ── */
 .driver-popover-footer {
-  padding: 12px 22px 18px 22px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 8px !important;
+  padding: 12px 0 0 0 !important;
+  margin: 0 !important;
   border-top: 1px solid rgba(255,255,255,0.07) !important;
 }
 
-/* ── Progress text ── */
+/* ── Progreso ── */
 .driver-popover-progress-text {
   font-size: 10px !important;
-  color: #555 !important;
   font-weight: 600 !important;
+  color: #555 !important;
   letter-spacing: 0.5px !important;
 }
 
-/* ── Navigation buttons ── */
-.driver-popover-navigation-btns { display: flex !important; gap: 6px !important; }
-
+/* ── Botones de navegación ── */
+.driver-popover-navigation-btns {
+  display: flex !important;
+  gap: 6px !important;
+}
 .driver-popover-prev-btn,
 .driver-popover-next-btn,
 .driver-popover-done-btn {
   font-size: 11px !important;
   font-weight: 700 !important;
-  padding: 6px 14px !important;
+  padding: 7px 16px !important;
   border-radius: 20px !important;
   border: none !important;
   cursor: pointer !important;
   transition: all 0.15s !important;
   text-shadow: none !important;
+  letter-spacing: 0.3px !important;
 }
-
 .driver-popover-prev-btn {
   background: rgba(255,255,255,0.07) !important;
   color: #aaa !important;
 }
-.driver-popover-prev-btn:hover { background: rgba(255,255,255,0.12) !important; color: #fff !important; }
-
+.driver-popover-prev-btn:hover {
+  background: rgba(255,255,255,0.13) !important;
+  color: #fff !important;
+}
 .driver-popover-next-btn,
 .driver-popover-done-btn {
   background: #F26722 !important;
@@ -4521,12 +4520,12 @@ const TOUR_CSS = `
 .driver-popover-next-btn:hover,
 .driver-popover-done-btn:hover { background: #d95a1a !important; }
 
-/* ── Arrow ── */
+/* ── Flecha ── */
 .driver-popover-arrow { border-color: transparent !important; }
-.driver-popover-arrow-side-bottom .driver-popover-arrow { border-top-color: #18181b !important; }
-.driver-popover-arrow-side-top    .driver-popover-arrow { border-bottom-color: #18181b !important; }
-.driver-popover-arrow-side-left   .driver-popover-arrow { border-right-color:  #18181b !important; }
-.driver-popover-arrow-side-right  .driver-popover-arrow { border-left-color:   #18181b !important; }
+.driver-popover-arrow-side-bottom .driver-popover-arrow { border-top-color:    #1c1c1f !important; }
+.driver-popover-arrow-side-top    .driver-popover-arrow { border-bottom-color: #1c1c1f !important; }
+.driver-popover-arrow-side-left   .driver-popover-arrow { border-right-color:  #1c1c1f !important; }
+.driver-popover-arrow-side-right  .driver-popover-arrow { border-left-color:   #1c1c1f !important; }
 `;
 (function injectTourCSS() {
   const s = document.createElement('style');
@@ -4534,98 +4533,105 @@ const TOUR_CSS = `
   document.head.appendChild(s);
 })();
 
-// Steps por sección 
+// Steps por sección
 const TOURS = {
 
   overview: [
-  { element: '.kpi-grid', popover: { title: ' KPIs Principales', description: 'Aquí ves tus 5 métricas clave de Google Search Console de los últimos 6 meses: Clics, Impresiones, CTR, Posición media y Clics por día.', side: 'bottom', align: 'start' }},
-  { element: '#kpi-clicks', popover: { title: ' Clics Totales', description: 'Cuántas veces los usuarios hicieron clic en tu sitio desde Google. Es la métrica más directa de tráfico orgánico.', side: 'bottom' }},
-  { element: '#kpi-pos', popover: { title: ' Posición Media', description: 'Tu puesto promedio en los resultados de búsqueda. Menor número = mejor posición. La meta es bajar de 4.0.', side: 'bottom' }},
-  { element: '#kpi-ctr', popover: { title: '% CTR Promedio', description: 'Porcentaje de impresiones que se convierten en clics. Un CTR bajo puede significar que tus títulos o descripciones en Google necesitan mejora.', side: 'bottom' }},
-  { element: '.comparison-table', popover: { title: ' Comparativa de Períodos', description: 'Compara el rendimiento de los últimos 7 días, 28 días y 6 meses para identificar tendencias positivas o negativas.', side: 'top' }},
-  { element: '#gsc-sessions-chart', popover: { title: ' Tendencia de Clics', description: 'Gráfica diaria de los últimos 6 meses. Busca picos o caídas que coincidan con cambios en tu sitio o en el algoritmo de Google.', side: 'top' }, fallback: { element: '.chart-wrap' }},
+    { element: '.sidebar-nav', popover: { title: 'Navegación del Dashboard', description: 'El menú lateral te lleva a cada sección. Empieza en Panorama General y ve explorando. Al fondo encontrarás el botón naranja "Actualizar datos" para refrescar toda la información.', side: 'right' }},
+    { element: '#page-overview .kpi-grid', popover: { title: 'KPIs Principales — Google Search Console', description: '5 métricas clave de los últimos 6 meses: Clics (visitas desde Google), Impresiones (veces que apareciste), CTR (% que hicieron clic), Posición media en Google y Clics promedio por día.', side: 'bottom', align: 'start' }},
+    { element: '#kpi-clicks', popover: { title: 'Clics Totales', description: 'Cuántas veces alguien hizo clic en tu sitio desde Google. Es la métrica más directa de tráfico orgánico. Objetivo: crecer mes a mes.', side: 'bottom' }},
+    { element: '#kpi-imp', popover: { title: 'Impresiones', description: 'Cuántas veces apareció tu sitio en Google, aunque nadie hiciera clic. Alta impresión + pocos clics = tu título o descripción no convence. Hay que mejorar el snippet.', side: 'bottom' }},
+    { element: '#kpi-ctr', popover: { title: 'CTR — Tasa de Clics', description: 'Porcentaje de impresiones que se convierten en visitas. Si es menor al 2%, tus títulos en Google no son atractivos. Mejorar titles y meta descriptions puede doblar el tráfico sin más esfuerzo.', side: 'bottom' }},
+    { element: '#kpi-pos', popover: { title: 'Posición Media', description: 'Tu lugar promedio en Google. Posición 1 = primer resultado. Meta recomendada: bajar de 4.0. Cada posición que subes puede significar un 20-30% más de clics.', side: 'bottom' }},
+    { element: '.comparison-table', popover: { title: 'Comparativa de Períodos', description: 'Compara 7 días, 28 días y 6 meses lado a lado. Ideal para detectar si una semana fue excepcional o si hay una tendencia sostenida de crecimiento o caída.', side: 'top' }},
   ],
 
   seo: [
-  { element: '#page-seo .page-header', popover: { title: ' SEO & Queries', description: 'Análisis detallado de las búsquedas que traen tráfico a tu sitio, basado en datos reales de Google Search Console.', side: 'bottom' }},
-  { element: '#page-seo .kpi-grid', popover: { title: ' Métricas SEO', description: 'Resumen de queries, páginas, posición promedio y CTR filtrado por el período seleccionado.', side: 'bottom' }},
-  { element: '#queries-table', popover: { title: ' Top Queries', description: 'Las búsquedas con más clics e impresiones. Ordena por columnas para ver qué palabras clave tienen alto potencial de mejora (muchas impresiones, pocos clics).', side: 'top' }, fallback: { element: '#page-seo .card' }},
-  { element: '#pages-table', popover: { title: ' Páginas con más Tráfico', description: 'Las URLs que generan más visitas orgánicas. Las páginas con alta posición pero bajo CTR son candidatas a mejorar su meta description.', side: 'top' }, fallback: { element: '#page-seo .card' }},
+    { element: '#page-seo .kpi-grid', popover: { title: 'Métricas SEO del Período', description: 'Resumen rápido de cuántas queries únicas trajeron tráfico, cuántas páginas recibieron clics, la posición promedio y el CTR global en el período analizado.', side: 'bottom' }},
+    { element: '#queries-table', popover: { title: 'Top Queries — Palabras Clave', description: 'Las búsquedas que más tráfico generan. La columna "Posición" indica dónde apareces en Google. Busca queries con muchas impresiones pero pocos clics — son oportunidades de mejorar el snippet para aumentar el CTR sin cambiar el contenido.', side: 'top' }, fallback: { element: '#page-seo .card' }},
+    { element: '#pages-table', popover: { title: 'Páginas con Más Tráfico Orgánico', description: 'Las URLs de tu sitio que más clics reciben desde Google. Las páginas con alta posición pero bajo CTR son candidatas a mejorar su title tag y meta description. Las páginas con muchas impresiones pero posición > 10 necesitan mejor contenido.', side: 'top' }, fallback: { element: '#page-seo .card' }},
   ],
 
   geo: [
-  { element: '#page-geo .page-header', popover: { title: ' Geografía de Tráfico', description: 'Distribución por país de los visitantes que llegan a través de Google.', side: 'bottom' }},
-  { element: '#geo-chart', popover: { title: ' Gráfica de Países', description: 'Compara el volumen de clics por país. República Dominicana, EE.UU. y Europa suelen ser los mercados más relevantes para alquiler de autos.', side: 'top' }, fallback: { element: '#page-geo .card' }},
-  { element: '#geo-table', popover: { title: ' Tabla de Países', description: 'Ordenada por clics. Identifica mercados internacionales activos — pueden ser turistas que investigan antes de viajar.', side: 'top' }, fallback: { element: '#page-geo .card' }},
+    { element: '#page-geo .page-header', popover: { title: 'Geografía del Tráfico Orgánico', description: 'Distribución por país de quiénes te encuentran en Google. Fundamental para una empresa de alquiler de autos: muestra de dónde vienen los turistas que buscan tu servicio antes de viajar.', side: 'bottom' }},
+    { element: '#geo-chart', popover: { title: 'Distribución por País', description: 'Barras comparativas de clics por país. República Dominicana, EE.UU., Canadá y Europa (España, Alemania, Francia) suelen ser los mercados con mayor intención de renta para turistas.', side: 'top' }, fallback: { element: '#page-geo .card' }},
+    { element: '#geo-table', popover: { title: 'Tabla de Mercados', description: 'Ordenada por clics con CTR e impresiones por país. Un mercado con CTR alto (>5%) y muchas impresiones indica alta intención — considera contenido o campañas pagadas en ese idioma.', side: 'top' }, fallback: { element: '#page-geo .card' }},
   ],
 
   gmb: [
-  { element: '#page-gmb .kpi-grid', popover: { title: ' KPIs Google Mi Negocio', description: 'Calificación promedio de todas tus sucursales, total de reseñas, número de ubicaciones activas y la sucursal mejor calificada.', side: 'bottom' }},
-  { element: '#gmb-kpi-rating', popover: { title: ' Calificación Promedio', description: 'Promedio de todas las sucursales. La meta es 4.8 o más — los negocios con calificación alta aparecen primero en Google Maps.', side: 'bottom' }},
-  { element: '#gmb-location-cards', popover: { title: ' Tarjetas de Sucursales', description: 'Perfil de cada ubicación con dirección, teléfono, horario de hoy, si está abierta ahora y número de fotos. Haz clic en "Gestionar" para ir directo a Google Business.', side: 'top' }},
-  { element: '#loc-tabs', popover: { title: ' Filtro por Sucursal', description: 'Cambia entre "Todas" y cada sucursal individual para ver sus reseñas específicas. Cada pestaña muestra la calificación de esa ubicación.', side: 'bottom' }},
-  { element: '#reviews-kpi-row', popover: { title: ' KPIs de Reseñas', description: 'Calificación, total de reseñas, cuántas son negativas (1-2), positivas (4-5) y qué porcentaje tiene respuesta del negocio.', side: 'bottom' }},
-  { element: '#star-filter-tabs', popover: { title: ' Filtro por Estrellas', description: 'Filtra las reseñas por calificación. El filtro de 1-2 es clave para identificar clientes insatisfechos que necesitan respuesta urgente.', side: 'bottom' }, fallback: { element: '#page-gmb .rf-tabs' }},
-  { element: '#gmb-reviews-list', popover: { title: ' Lista de Reseñas + IA', description: 'Cada reseña sin respuesta tiene el botón " Responder con IA". Claude genera una respuesta profesional en español dominicano con un clic — solo copiala y pégala en Google Business.', side: 'top' }},
+    { element: '#page-gmb .kpi-grid', popover: { title: 'KPIs de Reputación Online', description: 'Calificación promedio de todas las sucursales, total acumulado de reseñas, cantidad de ubicaciones activas y cuál es la sucursal mejor calificada. Estos números afectan directamente qué tan arriba apareces en Google Maps.', side: 'bottom' }},
+    { element: '#gmb-kpi-rating', popover: { title: 'Calificación Promedio', description: 'El promedio de estrellas de todas las sucursales. La meta es 4.8 o más — negocios con esa calificación aparecen primero en el Local Pack de Google. Cada reseña negativa sin respuesta baja esta cifra.', side: 'bottom' }},
+    { element: '#gmb-location-cards', popover: { title: 'Perfil de Cada Sucursal', description: 'Tarjetas con datos en tiempo real desde Google Maps: dirección, teléfono, si está abierta ahora, horario de hoy y número de fotos. El botón "Ver en Maps" abre la sucursal en Google Maps. "Gestionar" te lleva a Google Business para editar el perfil.', side: 'top' }},
+    { element: '#loc-tabs', popover: { title: 'Filtrar por Sucursal', description: 'Selecciona "Todas las Sucursales" para ver un resumen global, o haz clic en una sucursal específica para ver solo sus reseñas. La calificación aparece en cada pestaña. Las reseñas cargan desde SerpAPI al abrir esta sección.', side: 'bottom' }},
+    { element: '#reviews-kpi-row', popover: { title: 'Estadísticas de Reseñas', description: 'Para la sucursal o grupo seleccionado: calificación promedio, total de reseñas, cuántas son negativas (1-2 estrellas), cuántas son positivas (4-5) y el porcentaje que tiene respuesta del negocio. El objetivo es Reply Rate > 80%.', side: 'bottom' }},
+    { element: '#star-filter-tabs', popover: { title: 'Filtrar por Calificación', description: 'Filtra las reseñas por número de estrellas. El filtro "1-2 estrellas" es el más importante — muestra clientes insatisfechos que necesitan respuesta inmediata para recuperar la confianza y evitar que esa queja se quede sin atender.', side: 'bottom' }, fallback: { element: '#page-gmb .rf-tabs' }},
+    { element: '#gmb-reviews-list', popover: { title: 'Lista de Reseñas y Opciones de Respuesta', description: 'Cada reseña sin respuesta muestra dos opciones: "Responder con IA" — Claude genera una respuesta profesional en español dominicano adaptada al tono de la reseña, y "Escribir manual" — abre un área de texto para redactar tu propia respuesta. Ambas incluyen el botón "Publicar en Google" para responder directamente sin salir del dashboard.', side: 'top' }},
   ],
 
   analytics: [
-  { element: '#ga4-not-configured', popover: { title: ' Configuración GA4', description: 'Si ves este banner, agrega la variable GA4_PROPERTY_ID en Vercel → Settings → Environment Variables con el ID de tu propiedad de Google Analytics 4.', side: 'bottom' }},
-  { element: '#page-analytics .kpi-grid', popover: { title: ' KPIs de Analytics', description: 'Sesiones, usuarios únicos, nuevos usuarios, engagement rate y páginas vistas de los últimos 6 meses — datos en tiempo real de GA4.', side: 'bottom' }},
-  { element: '#ga4-kpi-engagement', popover: { title: ' Engagement Rate', description: 'Porcentaje de sesiones donde el usuario interactuó (scroll, clic, tiempo > 10s). Un rate alto indica que tu contenido es relevante.', side: 'bottom' }},
-  { element: '#ga4SessionsChart', popover: { title: ' Tendencia de Sesiones', description: 'Usa los botones 7d / 28d / 6m para cambiar el período. Busca correlaciones con campañas, publicaciones o estacionalidad turística.', side: 'top' }},
-  { element: '#ga4ChannelsChart', popover: { title: ' Fuentes de Tráfico', description: 'Distribución por canal: Organic Search (SEO), Direct, Referral, Paid, Social. Indica qué canales de marketing funcionan mejor.', side: 'top' }},
-  { element: '#ga4-devices-list', popover: { title: ' Dispositivos', description: 'Proporción de tráfico móvil vs escritorio. Si más del 60% es móvil, la experiencia y velocidad en celular es prioridad.', side: 'top' }},
-  { element: '#ga4-pages-body', popover: { title: ' Top Páginas', description: 'Páginas más visitadas con vistas, sesiones y tiempo promedio. Las páginas con bajo engagement pueden necesitar mejor contenido o CTA.', side: 'top' }},
+    { element: '#ga4-filter-bar', popover: { title: 'Filtro de Período — Analytics', description: 'Selecciona el período que quieres analizar: 7 días (semana reciente), 28 días (mes completo) o 6 meses (tendencia larga). El filtro actualiza tanto los KPIs de sesiones y usuarios como la gráfica de tendencia.', side: 'bottom' }},
+    { element: '#page-analytics .kpi-grid', popover: { title: 'KPIs de Google Analytics 4', description: 'Sesiones y Usuarios cambian según el período seleccionado. Nuevos Usuarios, Engagement Rate y Páginas Vistas siempre muestran los últimos 6 meses (GA4 no provee esos datos por día individual).', side: 'bottom' }},
+    { element: '#ga4-kpi-sessions', popover: { title: 'Sesiones del Período', description: 'Una sesión es una visita continua a tu sitio. Este número cambia cuando cambias el filtro de período. Compara la semana reciente con el mes anterior para detectar si hay crecimiento o caída.', side: 'bottom' }},
+    { element: '#ga4-kpi-engagement', popover: { title: 'Engagement Rate', description: 'Porcentaje de sesiones donde el usuario interactuó activamente — pasó más de 10 segundos, vio más de una página o realizó una acción. Un rate mayor al 50% indica que el contenido es relevante para tu audiencia.', side: 'bottom' }},
+    { element: '#ga4SessionsChart', popover: { title: 'Tendencia de Sesiones', description: 'Gráfica diaria del período activo. Busca picos que coincidan con campañas de redes sociales o fechas festivas, y caídas que puedan indicar problemas técnicos o cambios en el algoritmo de Google.', side: 'top' }},
+    { element: '#ga4ChannelsChart', popover: { title: 'Fuentes de Tráfico', description: 'Cómo llega la gente a tu sitio: Organic Search (Google/Bing gratis), Direct (URL directa o app), Referral (otro sitio), Paid (anuncios), Social (redes sociales). Si Organic es tu canal principal, el SEO está funcionando.', side: 'top' }},
+    { element: '#ga4-devices-list', popover: { title: 'Dispositivos', description: 'Proporción de visitas desde móvil, tablet y escritorio. Si más del 65% es móvil, asegúrate de que nellyrac.do tenga una experiencia mobile excelente — Google rankea primero por la versión móvil.', side: 'top' }},
+    { element: '#ga4-pages-body', popover: { title: 'Páginas Más Visitadas', description: 'Las URLs con más vistas, sesiones y tiempo promedio. Una página con muchas vistas pero tiempo corto puede necesitar mejor contenido. Un engagement rate bajo en la página de reservas es una señal de alarma.', side: 'top' }},
   ],
 
   audit: [
-  { element: '#page-audit .page-header', popover: { title: ' Auditoría Técnica', description: 'Rastrea todas las URLs de tu sitio y detecta errores técnicos que pueden afectar tu posicionamiento en Google.', side: 'bottom' }},
-  { element: '#audit-run-btn', popover: { title: ' Ejecutar Crawl', description: 'Inicia el rastreo. El crawler visita ~18 páginas clave de nellyrac.do y verifica estado HTTP, velocidad de carga, meta tags y canonicals.', side: 'bottom' }},
-  { element: '#audit-kpis', popover: { title: ' Resultados del Crawl', description: 'Total de páginas, cuántas responden 200 OK, cuántas tienen redirecciones (301/302), errores 404 y páginas lentas (>2s). Los errores y páginas lentas impactan el SEO.', side: 'bottom' }},
-  { element: '#audit-filters', popover: { title: ' Filtros de Estado', description: 'Filtra por tipo de resultado para enfocarte en los problemas. Prioriza primero los errores 404 y luego las páginas lentas.', side: 'bottom' }},
-  { element: '#audit-tbody', popover: { title: ' Tabla de Resultados', description: 'Cada fila muestra URL, código de estado, tiempo de carga, title y meta description. Una meta description vacía o duplicada puede bajar tu CTR en Google.', side: 'top' }},
+    { element: '#page-audit .page-header', popover: { title: 'Auditoría Técnica del Sitio', description: 'Rastrea automáticamente todas las URLs de nellyrac.do y detecta errores que afectan el SEO: páginas lentas, errores 404, redirecciones innecesarias y problemas con meta tags.', side: 'bottom' }},
+    { element: '#audit-run-btn', popover: { title: 'Ejecutar Crawl', description: 'Inicia el rastreo de las ~18 páginas clave del sitio. Tarda 10-20 segundos. El crawler verifica el código de respuesta HTTP, tiempo de carga, title, meta description, H1 y canonical de cada página.', side: 'bottom' }},
+    { element: '#audit-kpis', popover: { title: 'Resumen de Resultados', description: 'Cuántas páginas responden correctamente (200 OK), cuántas redirigen (301/302), cuántas dan error 404 y cuántas cargan lento (más de 2 segundos). Los errores y páginas lentas perjudican el ranking en Google.', side: 'bottom' }},
+    { element: '#audit-filters', popover: { title: 'Filtros por Tipo de Problema', description: 'Filtra para ver solo los errores o solo las páginas lentas. Prioridad sugerida: primero corrige los 404 (páginas inexistentes), luego las redirecciones innecesarias, y finalmente optimiza las páginas lentas.', side: 'bottom' }},
+    { element: '#audit-tbody', popover: { title: 'Detalle por URL', description: 'Cada fila muestra: código de respuesta, tiempo de carga en ms, title tag, meta description y hacia dónde redirige (si aplica). Los campos vacíos en title o descripción son oportunidades inmediatas de mejora SEO.', side: 'top' }},
   ],
 
   pagespeed: [
-  { element: '#page-pagespeed .page-header', popover: { title: ' PageSpeed & Core Web Vitals', description: 'Mide la velocidad de carga de tus páginas usando la API de Google PageSpeed Insights — los mismos datos que usa Google para rankear.', side: 'bottom' }},
-  { element: '#ps-btn-mobile', popover: { title: ' Mobile vs Desktop', description: 'Alterna entre análisis móvil y escritorio. Google usa primero el índice móvil (mobile-first indexing), así que el score móvil es más crítico para SEO.', side: 'bottom' }},
-  { element: '#ps-run-btn', popover: { title: ' Analizar Velocidad', description: 'Analiza todas las URLs de tu sitio. Puede tomar 30-60 segundos. Google asigna scores del 0-100: 90+ verde, 50-89 naranja, <50 rojo.', side: 'bottom' }},
-  { element: '#ps-kpis', popover: { title: ' Resumen de Scores', description: 'Score promedio, páginas rápidas (90+), páginas a mejorar (50-89) y páginas lentas (<50). Cualquier página lenta perjudica la experiencia del usuario y el ranking.', side: 'bottom' }},
-  { element: '#ps-tbody', popover: { title: ' Detalle por Página', description: 'Score individual, LCP (tiempo de carga del elemento principal), CLS (estabilidad visual) y FID (respuesta a interacción). Son los 3 Core Web Vitals que Google evalúa.', side: 'top' }},
+    { element: '#page-pagespeed .page-header', popover: { title: 'PageSpeed e Core Web Vitals', description: 'Mide la velocidad y experiencia de usuario de cada página usando la misma API que usa Google para rankear. Un sitio lento pierde posiciones en Google aunque tenga buen contenido.', side: 'bottom' }},
+    { element: '#ps-btn-mobile', popover: { title: 'Mobile vs Desktop', description: 'Cambia entre análisis móvil y escritorio. Google usa el índice mobile-first — el score móvil impacta el SEO más que el de escritorio. Analiza siempre móvil primero para priorizar correctamente.', side: 'bottom' }},
+    { element: '#ps-run-btn', popover: { title: 'Analizar Velocidad', description: 'Analiza todas las páginas clave de nellyrac.do. Puede tomar 30-60 segundos. Cada página recibe un score de 0-100: verde (90+) es rápida, naranja (50-89) necesita mejora, rojo (<50) afecta negativamente el ranking.', side: 'bottom' }},
+    { element: '#ps-kpis', popover: { title: 'Resumen de Velocidad', description: 'Score promedio del sitio, cuántas páginas están en verde (rápidas), naranja (mejorables) y rojo (lentas). El objetivo es que todas las páginas principales lleguen a 90+, especialmente la homepage y la página de reservas.', side: 'bottom' }},
+    { element: '#ps-tbody', popover: { title: 'Detalle por Página — Core Web Vitals', description: 'Score individual y los 3 Core Web Vitals: LCP (tiempo de carga del elemento principal — meta: <2.5s), CLS (estabilidad visual — meta: <0.1) e INP/FID (respuesta a interacción — meta: <100ms). Google los usa como factores de ranking.', side: 'top' }},
   ],
 
   serp: [
-  { element: '#page-serp .page-header', popover: { title: ' SERP & Posiciones', description: 'Verifica en qué posición aparece nellyrac.do para las keywords más importantes. Usa SerpAPI para obtener resultados reales de Google.', side: 'bottom' }},
-  { element: '#serp-kw-input', popover: { title: ' Keywords a Rastrear', description: 'Escribe las palabras clave separadas por coma. Ejemplo: "rent a car santo domingo, nelly rac, alquiler de autos punta cana, rent a car aeropuerto las americas"', side: 'bottom' }},
-  { element: '#serp-gl-select', popover: { title: ' País de Búsqueda', description: 'Selecciona el país desde donde simular la búsqueda. Usa República Dominicana para resultados locales, EE.UU. para turistas americanos.', side: 'bottom' }},
-  { element: '#serp-run-btn', popover: { title: ' Verificar Posiciones', description: 'Ejecuta la búsqueda. Muestra posición exacta, URL que aparece y los primeros competidores. Guarda los resultados para incluirlos en el Plan IA.', side: 'bottom' }},
-  { element: '#serp-kpis', popover: { title: ' Resumen de Posiciones', description: 'Cuántas keywords rastreaste, cuántas aparecen en los primeros 20 resultados, cuántas en top 3 y top 10, y la posición promedio.', side: 'bottom' }},
+    { element: '#page-serp .page-header', popover: { title: 'Posiciones SERP en Google', description: 'Verifica exactamente en qué posición aparece nellyrac.do para las palabras clave más importantes. Usa datos reales de Google vía SerpAPI — no estimaciones.', side: 'bottom' }},
+    { element: '#serp-kw-input', popover: { title: 'Keywords a Verificar', description: 'Escribe las palabras clave separadas por coma. Ejemplo: rent a car santo domingo, nelly rac, alquiler de autos punta cana, rent a car aeropuerto las americas, car rental dominican republic. Incluye variaciones en inglés para turistas.', side: 'bottom' }},
+    { element: '#serp-gl-select', popover: { title: 'País de Búsqueda', description: 'Simula la búsqueda desde ese país. Usa "República Dominicana" (do) para ver resultados locales y "Estados Unidos" (us) para ver qué ven los turistas americanos. Los resultados cambian según la ubicación.', side: 'bottom' }},
+    { element: '#serp-run-btn', popover: { title: 'Verificar Posiciones', description: 'Ejecuta la búsqueda para todas las keywords. Muestra posición exacta, URL que aparece y los competidores en las posiciones superiores. Guarda los resultados — puedes incluirlos en el Plan IA para recomendaciones específicas.', side: 'bottom' }},
+    { element: '#serp-kpis', popover: { title: 'Resumen de Posicionamiento', description: 'Total de keywords verificadas, cuántas aparecen en los primeros 20 resultados, cuántas están en top 3 (reciben la mayoría de los clics), cuántas en top 10 (primera página) y la posición promedio general.', side: 'bottom' }},
   ],
 
   onpage: [
-  { element: '#page-onpage .page-header', popover: { title: ' SEO On-Page', description: 'Analiza los elementos de SEO on-page de cada URL: title, meta description, H1, canonical y robots. Datos críticos para el posicionamiento.', side: 'bottom' }},
-  { element: '#onpage-run-btn', popover: { title: ' Analizar SEO On-Page', description: 'Rastrea todas las páginas del sitio extrayendo sus meta tags. Identifica páginas con title demasiado largo, sin meta description o sin H1.', side: 'bottom' }},
-  { element: '#onpage-kpis', popover: { title: ' Problemas Detectados', description: 'Cuántas páginas tienen título correcto, cuántas les falta meta description, cuántas no tienen H1 y cuántas carecen de canonical. Cada uno es un issue SEO.', side: 'bottom' }},
-  { element: '#onpage-filters', popover: { title: ' Filtros por Tipo de Problema', description: 'Filtra por páginas con "Sin descripción", "Sin H1" o "Sin canonical" para enfocarte en un tipo de problema a la vez y priorizarlo.', side: 'bottom' }},
-  { element: '#onpage-tbody', popover: { title: ' Tabla de Páginas', description: 'Cada fila muestra la URL con sus meta tags. Los campos en rojo indican problemas. El canonical indica cuál URL considera Google la "oficial".', side: 'top' }},
+    { element: '#page-onpage .page-header', popover: { title: 'Análisis SEO On-Page', description: 'Extrae y analiza los elementos de SEO on-page de cada página: title tag, meta description, H1, etiqueta canonical y directiva robots. Son los factores que más directamente controlas para mejorar tu posición en Google.', side: 'bottom' }},
+    { element: '#onpage-run-btn', popover: { title: 'Analizar SEO On-Page', description: 'Rastrea todas las páginas del sitio y extrae sus meta tags. Tarda 10-20 segundos. Identifica automáticamente páginas con title demasiado largo (más de 60 caracteres), sin meta description, sin H1 o sin canonical.', side: 'bottom' }},
+    { element: '#onpage-kpis', popover: { title: 'Problemas Detectados', description: 'Cuántas páginas tienen cada elemento correcto o faltante. "Sin descripción" y "Sin H1" son los errores más comunes y los más fáciles de corregir. Una meta description optimizada puede subir el CTR un 20-30% sin cambiar posición.', side: 'bottom' }},
+    { element: '#onpage-filters', popover: { title: 'Filtros por Tipo de Problema', description: 'Filtra para ver solo páginas con un problema específico. Recomendación: empieza por "Sin descripción" — añadir meta descriptions a las páginas con más tráfico tiene el mayor impacto inmediato en el CTR.', side: 'bottom' }},
+    { element: '#onpage-tbody', popover: { title: 'Tabla On-Page por URL', description: 'Cada fila muestra la URL con su title, meta description, H1, canonical y directiva robots. Campos en rojo = problema. El canonical confirma a Google cuál es la URL "oficial" de ese contenido, evitando duplicados.', side: 'top' }},
   ],
 
   aiplan: [
-  { element: '#page-aiplan .page-header', popover: { title: ' Plan de Acción IA', description: 'Claude analiza todos tus datos de SEO, Analytics, reseñas y velocidad para generar un plan de acción personalizado y priorizado para Nelly RAC.', side: 'bottom' }},
-  { element: '#page-aiplan .card', popover: { title: ' Fuentes de Datos', description: 'Selecciona qué datos incluir en el análisis. Search Console y Analytics se cargan automáticamente. SERP y PageSpeed requieren ejecutarlos primero en sus secciones.', side: 'bottom' }},
-  { element: '#aiplan-run-btn', popover: { title: ' Generar Plan', description: 'Claude Haiku analiza todos los datos seleccionados y genera un plan con 7-9 acciones priorizadas. Toma ~10 segundos.', side: 'bottom' }},
-  { element: '#aiplan-results', popover: { title: ' Diagnóstico con IA', description: 'El gauge muestra la "salud digital" del 1 al 10. El texto de diagnóstico explica la situación actual en lenguaje directo, como si hablara con el dueño del negocio.', side: 'bottom' }},
-  { element: '#aiplan-actions-grid', popover: { title: ' Cards de Acciones', description: 'Cada card muestra: qué hacer, por qué hacerlo, el impacto esperado, el esfuerzo requerido y el plazo sugerido. Las de prioridad alta (borde rojo) son las más urgentes.', side: 'top' }, fallback: { element: '#aiplan-results' }},
-  { element: '#aiplan-filter-bar', popover: { title: ' Filtrar por Categoría', description: 'Filtra las acciones por categoría: SEO Técnico, Contenido, Local SEO, Velocidad, Reseñas, etc. Útil para delegar tareas por área.', side: 'bottom' }, fallback: { element: '#aiplan-results' }},
+    { element: '#page-aiplan .page-header', popover: { title: 'Plan de Acción con Inteligencia Artificial', description: 'Claude AI analiza todos tus datos de SEO, Analytics, reseñas Google y velocidad del sitio para generar un plan de acción personalizado, priorizado y escrito en lenguaje directo — sin tecnicismos.', side: 'bottom' }},
+    { element: '#page-aiplan .card', popover: { title: 'Fuentes de Datos para el Análisis', description: 'Search Console y Analytics se incluyen automáticamente. Para incluir SERP y PageSpeed en el análisis, ejecútalos primero en sus respectivas secciones y luego vuelve aquí. Más datos = plan más preciso.', side: 'bottom' }},
+    { element: '#aiplan-run-btn', popover: { title: 'Generar Plan con Claude AI', description: 'Claude Haiku procesa todos los datos seleccionados y genera entre 7 y 9 acciones priorizadas específicas para Nelly RAC. Tarda aproximadamente 10-15 segundos. Puedes regenerarlo cuando quieras con datos actualizados.', side: 'bottom' }},
+    { element: '#aiplan-results', popover: { title: 'Diagnóstico General', description: 'El medidor muestra la "salud digital" de 1 a 10. El texto de diagnóstico explica la situación actual como si Claude le hablara directamente al dueño del negocio — sin términos técnicos, con contexto real.', side: 'bottom' }},
+    { element: '#aiplan-actions-grid', popover: { title: 'Cards de Acciones Priorizadas', description: 'Cada card tiene: qué hacer exactamente, por qué hacerlo (impacto en clientes o reservas), nivel de impacto (alto/medio/bajo), esfuerzo requerido y plazo sugerido. Borde rojo = alta prioridad, actúa primero en esas.', side: 'top' }, fallback: { element: '#aiplan-results' }},
+    { element: '#aiplan-filter-bar', popover: { title: 'Filtrar por Categoría de Acción', description: 'Filtra las acciones por área: SEO Técnico, Contenido, Local SEO, Velocidad, Reseñas, Conversión o Analítica. Útil cuando quieres delegar: "estas son las tareas de SEO técnico para el desarrollador".', side: 'bottom' }, fallback: { element: '#aiplan-results' }},
   ],
 
   experiments: [
-  { element: '#page-experiments .page-header', popover: { title: ' Insights & Acciones', description: 'Oportunidades detectadas automáticamente en tus datos de Google Search Console. Insights accionables sin necesidad de análisis manual.', side: 'bottom' }},
-  { element: '#page-experiments .kpi-grid', popover: { title: ' Oportunidades Detectadas', description: 'Páginas con CTR bajo, clics potenciales si mejoras el CTR, queries "cerca del top 3" (posiciones 4-10), mercados de alta intención y queries sin conversión.', side: 'bottom' }},
-  { element: '#ins-kpi-neartop', popover: { title: ' Quick Wins SEO', description: 'Queries en posición 4-10 con más de 200 impresiones. Con pequeñas mejoras de contenido estas páginas pueden saltar al top 3, multiplicando los clics.', side: 'bottom' }},
-  { element: '#ins-kpi-ctr-potential', popover: { title: ' Clics Potenciales', description: 'Estimación de clics adicionales si las páginas con CTR < 1% subieran al 3%. Muestra el impacto real de optimizar los titles y meta descriptions.', side: 'bottom' }},
-  { element: '#insights-ctr-table', popover: { title: ' Páginas con Mayor Oportunidad', description: 'Lista ordenada por potencial de mejora. Estas páginas tienen mucha visibilidad pero poca gente hace clic — son las primeras que debes optimizar.', side: 'top' }},
+    { element: '#page-experiments .page-header', popover: { title: 'Insights y Oportunidades Automáticas', description: 'El dashboard analiza automáticamente tus datos de Google Search Console y detecta oportunidades concretas — sin que tengas que buscarlas manualmente. Se actualiza con cada recarga de datos.', side: 'bottom' }},
+    { element: '#page-experiments .kpi-grid', popover: { title: 'Oportunidades Detectadas', description: 'Páginas con CTR bajo (fácil de mejorar con mejor texto), clics potenciales si subes el CTR, queries en posición 4-10 (casi en primera posición), países con alta intención de compra y queries que aparecen pero nunca convierten en clics.', side: 'bottom' }},
+    { element: '#ins-kpi-neartop', popover: { title: 'Quick Wins — Queries Cerca del Top 3', description: 'Búsquedas donde apareces en posición 4-10 con más de 200 impresiones. Con pequeñas mejoras de contenido estas páginas pueden subir al top 3, lo que puede triplicar los clics. Son las acciones de mayor retorno con menos esfuerzo.', side: 'bottom' }},
+    { element: '#ins-kpi-ctr-potential', popover: { title: 'Clics Potenciales Adicionales', description: 'Estimación de cuántos clics más recibirías si las páginas con CTR menor al 1% subieran a un 3% promedio. Es el impacto real de optimizar los títulos y descripciones en Google — sin necesidad de nuevas páginas ni backlinks.', side: 'bottom' }},
+    { element: '#insights-ctr-table', popover: { title: 'Páginas Prioritarias para Optimizar', description: 'Las páginas con mayor potencial ordenadas por prioridad. Tienen mucha visibilidad en Google pero poca gente hace clic. Mejora el title tag y la meta description de estas páginas antes que cualquier otra tarea SEO.', side: 'top' }},
+  ],
+
+  glossary: [
+    { element: '#page-glossary .page-header', popover: { title: 'Glosario de Términos', description: 'Referencia rápida de todos los términos y métricas que aparecen en el dashboard. Si en alguna sección ves un término desconocido, búscalo aquí.', side: 'bottom' }},
+    { element: '#glossary-search', popover: { title: 'Búsqueda en Tiempo Real', description: 'Escribe cualquier término para filtrarlo instantáneamente — por ejemplo "CTR", "LCP" o "canonical". Las secciones sin resultados se ocultan automáticamente.', side: 'bottom' }},
+    { element: '#glossary-body', popover: { title: '8 Categorías de Términos', description: 'Los términos están organizados por área: Search Console, Analytics, PageSpeed, SERP, SEO On-Page, Google My Business, Auditoría Técnica y Plan IA. Cada definición incluye el contexto específico para un negocio de alquiler de autos en RD.', side: 'top' }},
   ],
 };
 
@@ -4837,12 +4843,4 @@ function filterGlossary(q) {
     card.style.display = match ? '' : 'none';
   });
   document.querySelectorAll('.gloss-section').forEach(section => {
-    const visible = [...section.querySelectorAll('.gloss-card')].some(c => c.style.display !== 'none');
-    section.style.display = visible ? '' : 'none';
-  });
-}
-
-</script>
-</body>
-</html>
-                                                       
+    const visible = [...section.querySelectorAll('.gloss-card')].some(c => c.style.display !== 'none')
