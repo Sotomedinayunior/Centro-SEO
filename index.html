@@ -625,8 +625,12 @@ html,body{overflow-x:hidden;width:100%}
   Insights & Acciones
   </div>
   <div class="nav-label">Ayuda</div>
+  <div class="nav-item" onclick="startTour(document.querySelector('.page.active')?.id?.replace('page-','')||'overview')" style="cursor:pointer">
+  <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.507 6.507 0 0 0 8 1.5zM0 8a8 8 0 1 1 8 8A8 8 0 0 1 0 8z"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
+  Tour
+  </div>
   <div class="nav-item" data-page="glossary" onclick="showPage('glossary',this)">
-  <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 7.5h6M5 10h4" stroke-linecap="round"/><path d="M5 5h6" stroke-linecap="round"/></svg>
+  <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 7.5h6M5 10h4" stroke-linecap="round"/></svg>
   Glosario
   </div>
   </nav>
@@ -2484,6 +2488,11 @@ function showPage(name, el) {
     _gmbDataLoaded = true;
     _loadGmbSection();
   }
+
+  // Render D3 analytics charts when analytics tab opens (D3 needs visible container)
+  if (name === 'analytics' && window._ga4FullData) {
+    setTimeout(() => _renderGA4D3Charts(window._ga4FullData), 50);
+  }
 }
 
 async function _loadGmbSection() {
@@ -3404,39 +3413,58 @@ function renderGA4(G) {
   // Devices bar rows
   const devices = G.devices || [];
   const devContainer = document.getElementById('ga4-devices-list');
-  if (devContainer && devices.length) {
-  const maxDev = Math.max(...devices.map(d => d.sessions), 1);
-  devContainer.innerHTML = devices.map(d => `
-  <div class="ga4-bar-row">
-  <div class="ga4-bar-label">${d.device}</div>
-  <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(d.sessions/maxDev*100)}%"></div></div>
-  <div class="ga4-bar-val">${fmt(d.sessions)}</div>
-  </div>`).join('');
+  if (devContainer) {
+    if (devices.length) {
+      const maxDev = Math.max(...devices.map(d => d.sessions), 1);
+      devContainer.innerHTML = devices.map(d => `
+        <div class="ga4-bar-row">
+          <div class="ga4-bar-label">${d.device}</div>
+          <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(d.sessions/maxDev*100)}%"></div></div>
+          <div class="ga4-bar-val">${fmt(d.sessions)}</div>
+        </div>`).join('');
+    } else {
+      devContainer.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de dispositivos</div>';
+    }
   }
-
-  // D3 countries horizontal bar chart
-  renderD3Countries((G.countries || []).slice(0, 10));
-
-  // D3 activity heatmap (uses 6m daily data)
-  renderD3Heatmap(G.daily6m || []);
 
   // Top pages table
   const pages = (G.pages || []).slice(0, 15);
   const tbody = document.getElementById('ga4-pages-body');
   if (tbody) {
-  tbody.innerHTML = pages.length ? pages.map(p => {
-  const dur = p.avgDuration >= 60
-  ? Math.floor(p.avgDuration/60)+'m '+String(p.avgDuration%60).padStart(2,'0')+'s'
-  : p.avgDuration+'s';
-  return `<tr style="border-bottom:1px solid var(--border)">
-  <td style="padding:8px 6px;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.page}</td>
-  <td style="padding:8px 6px;text-align:right;font-weight:600">${fmt(p.pageViews)}</td>
-  <td style="padding:8px 6px;text-align:right">${fmt(p.sessions)}</td>
-  <td style="padding:8px 6px;text-align:right;color:var(--text2)">${dur}</td>
-  <td style="padding:8px 6px;text-align:right;color:${p.engagementRate>=50?GR:'var(--text2)'}">${p.engagementRate}%</td>
-  </tr>`;
-  }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Sin datos de páginas</td></tr>';
+    tbody.innerHTML = pages.length ? pages.map(p => {
+      const dur = p.avgDuration >= 60
+        ? Math.floor(p.avgDuration/60)+'m '+String(p.avgDuration%60).padStart(2,'0')+'s'
+        : p.avgDuration+'s';
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 6px;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.page}</td>
+        <td style="padding:8px 6px;text-align:right;font-weight:600">${fmt(p.pageViews)}</td>
+        <td style="padding:8px 6px;text-align:right">${fmt(p.sessions)}</td>
+        <td style="padding:8px 6px;text-align:right;color:var(--text2)">${dur}</td>
+        <td style="padding:8px 6px;text-align:right;color:${p.engagementRate>=50?GR:'var(--text2)'}">${p.engagementRate}%</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Sin datos — verifica que GA4_PROPERTY_ID esté configurado correctamente en Vercel</td></tr>';
   }
+
+  // D3 charts: defer until D3 is ready + page is visible
+  // Store GA4 data globally so showPage('analytics') can re-render if needed
+  window._ga4FullData = G;
+  _renderGA4D3Charts(G);
+}
+
+// Render D3 charts (called on data load + when analytics tab opens)
+function _renderGA4D3Charts(G) {
+  if (!G) return;
+  // If D3 not yet loaded, schedule retry
+  if (typeof d3 === 'undefined') {
+    setTimeout(() => _renderGA4D3Charts(G), 300);
+    return;
+  }
+  // If analytics page not visible, clientWidth will be 0 — defer
+  const analyticsPage = document.getElementById('page-analytics');
+  if (!analyticsPage?.classList.contains('active')) return; // will re-run when tab opens
+
+  renderD3Countries((G.countries || []).slice(0, 10));
+  renderD3Heatmap(G.daily6m || []);
 }
 
 // ── D3 Horizontal Bar Chart — Top Países ─────────────────────────────────────
@@ -4903,37 +4931,12 @@ function startTour(pageId) {
 
 // Inyectar botones de tour en cada page-header 
 // Botón en sidebar solamente
-function initSidebarTourBtn() {
-  const nav = document.querySelector('.sidebar-nav');
-  if (!nav) return;
-
-  const divider = document.createElement('div');
-  divider.className = 'nav-label';
-  divider.style.marginTop = '8px';
-  divider.textContent = 'Ayuda';
-
-  const btn = document.createElement('div');
-  btn.className = 'nav-item';
-  btn.style.cursor = 'pointer';
-  btn.innerHTML = `<svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.507 6.507 0 0 0 8 1.5zM0 8a8 8 0 1 1 8 8A8 8 0 0 1 0 8z"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg> Tours de Ayuda`;
-  btn.onclick = () => {
-  // Show picker modal
-  const current = document.querySelector('.page.active')?.id?.replace('page-','') || 'overview';
-  startTour(current);
-  };
-
-  nav.appendChild(divider);
-  nav.appendChild(btn);
-}
-
 // Init after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  initSidebarTourBtn();
   if (typeof lucide !== 'undefined') lucide.createIcons();
   renderGlossary();
 });
 if (document.readyState !== 'loading') {
-  initSidebarTourBtn();
   if (typeof lucide !== 'undefined') lucide.createIcons();
   renderGlossary();
 }
