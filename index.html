@@ -6,6 +6,7 @@
 <title id="page-title">Unidad de inteligencia || nelly rent a car </title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <link rel="shortcut icon" href="/favico.png" type="image/x-icon">
 
@@ -1384,16 +1385,28 @@ html,body{overflow-x:hidden;width:100%}
   </div>
   </div>
 
-  <!-- Dispositivos + Países -->
+  <!-- Dispositivos + Países D3 -->
   <div class="grid-2" style="margin-bottom:20px">
   <div class="card">
   <div class="card-title">Dispositivos</div>
   <div id="ga4-devices-list" style="margin-top:4px"></div>
   </div>
   <div class="card">
-  <div class="card-title">Top Países</div>
-  <div id="ga4-countries-list" style="margin-top:4px"></div>
+  <div class="card-header-flex">
+    <div class="card-title">Top Mercados</div>
+    <span style="font-size:10px;color:var(--text3);font-weight:600">sesiones</span>
   </div>
+  <div id="ga4-countries-d3" style="margin-top:8px"></div>
+  </div>
+  </div>
+
+  <!-- D3 Heatmap semanal -->
+  <div class="card" style="margin-bottom:20px">
+  <div class="card-header-flex">
+    <div class="card-title">Actividad Semanal — Patrón de Tráfico</div>
+    <span id="ga4-heatmap-period" style="font-size:10px;color:var(--text3);font-weight:600">últimos 6 meses</span>
+  </div>
+  <div id="ga4-heatmap" style="overflow-x:auto;padding-top:4px"></div>
   </div>
 
   <!-- Top Páginas -->
@@ -3401,18 +3414,11 @@ function renderGA4(G) {
   </div>`).join('');
   }
 
-  // Countries bar rows
-  const countries = (G.countries || []).slice(0, 10);
-  const ctryContainer = document.getElementById('ga4-countries-list');
-  if (ctryContainer && countries.length) {
-  const maxC = Math.max(...countries.map(c => c.sessions), 1);
-  ctryContainer.innerHTML = countries.map(c => `
-  <div class="ga4-bar-row">
-  <div class="ga4-bar-label" style="min-width:110px">${c.country}</div>
-  <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(c.sessions/maxC*100)}%"></div></div>
-  <div class="ga4-bar-val">${fmt(c.sessions)}</div>
-  </div>`).join('');
-  }
+  // D3 countries horizontal bar chart
+  renderD3Countries((G.countries || []).slice(0, 10));
+
+  // D3 activity heatmap (uses 6m daily data)
+  renderD3Heatmap(G.daily6m || []);
 
   // Top pages table
   const pages = (G.pages || []).slice(0, 15);
@@ -3433,7 +3439,222 @@ function renderGA4(G) {
   }
 }
 
-// Auditoría Crawler 
+// ── D3 Horizontal Bar Chart — Top Países ─────────────────────────────────────
+function renderD3Countries(data) {
+  const container = document.getElementById('ga4-countries-d3');
+  if (!container || !data.length || typeof d3 === 'undefined') return;
+  container.innerHTML = '';
+
+  const W = container.clientWidth || 300;
+  const barH = 22, gap = 6, labelW = 110, valueW = 48;
+  const barW = W - labelW - valueW - 16;
+  const H = data.length * (barH + gap) + 4;
+
+  const maxVal = d3.max(data, d => d.sessions) || 1;
+  const x = d3.scaleLinear().domain([0, maxVal]).range([0, barW]);
+  const fmt2 = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+
+  const svg = d3.select(container)
+    .append('svg')
+    .attr('width', W)
+    .attr('height', H)
+    .style('overflow', 'visible');
+
+  const g = svg.append('g').attr('transform', `translate(${labelW},0)`);
+
+  // Track background
+  g.selectAll('.track')
+    .data(data)
+    .join('rect')
+    .attr('class', 'track')
+    .attr('x', 0)
+    .attr('y', (_, i) => i * (barH + gap) + 2)
+    .attr('width', barW)
+    .attr('height', barH - 4)
+    .attr('rx', 4)
+    .attr('fill', 'rgba(255,255,255,0.04)');
+
+  // Bars — animated
+  g.selectAll('.bar')
+    .data(data)
+    .join('rect')
+    .attr('class', 'bar')
+    .attr('x', 0)
+    .attr('y', (_, i) => i * (barH + gap) + 2)
+    .attr('width', 0)
+    .attr('height', barH - 4)
+    .attr('rx', 4)
+    .attr('fill', (d, i) => i === 0 ? '#F26722' : `rgba(242,103,34,${0.55 - i * 0.04})`)
+    .transition().duration(700).delay((_, i) => i * 60)
+    .attr('width', d => Math.max(x(d.sessions), 2));
+
+  // Country labels (left)
+  svg.selectAll('.lbl')
+    .data(data)
+    .join('text')
+    .attr('class', 'lbl')
+    .attr('x', labelW - 8)
+    .attr('y', (_, i) => i * (barH + gap) + barH / 2 + 1)
+    .attr('text-anchor', 'end')
+    .attr('dominant-baseline', 'middle')
+    .attr('fill', '#aaa')
+    .attr('font-size', 11)
+    .text(d => d.country.length > 14 ? d.country.slice(0, 13) + '…' : d.country);
+
+  // Value labels (right of bar)
+  g.selectAll('.val')
+    .data(data)
+    .join('text')
+    .attr('class', 'val')
+    .attr('x', barW + 6)
+    .attr('y', (_, i) => i * (barH + gap) + barH / 2 + 1)
+    .attr('dominant-baseline', 'middle')
+    .attr('fill', '#666')
+    .attr('font-size', 10)
+    .attr('font-weight', '600')
+    .text(d => fmt2(d.sessions));
+}
+
+// ── D3 GitHub-style Heatmap — Actividad diaria ────────────────────────────────
+function renderD3Heatmap(dailyData) {
+  const container = document.getElementById('ga4-heatmap');
+  if (!container || !dailyData.length || typeof d3 === 'undefined') return;
+  container.innerHTML = '';
+
+  const cellSize = 13, cellGap = 2, step = cellSize + cellGap;
+  const days = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  const marginLeft = 24, marginTop = 20;
+
+  // Parse data into date → sessions map
+  const dataMap = new Map(dailyData.map(d => [d.date, d.sessions]));
+  const maxVal  = d3.max(dailyData, d => d.sessions) || 1;
+
+  // Build date range (last 26 weeks = ~6 months)
+  const endDate   = new Date();
+  endDate.setDate(endDate.getDate() - endDate.getDay()); // last Sunday
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 26 * 7 + 1);
+
+  const allDates = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    allDates.push(new Date(d));
+  }
+
+  // Group by week
+  const weeks = d3.group(allDates, d => {
+    const diff = Math.floor((d - startDate) / (7 * 24 * 3600 * 1000));
+    return diff;
+  });
+
+  const numWeeks = weeks.size;
+  const W = marginLeft + numWeeks * step + 10;
+  const H = marginTop + 7 * step + 4;
+
+  const colorScale = d3.scaleSequential()
+    .domain([0, maxVal])
+    .interpolator(t => t === 0
+      ? 'rgba(255,255,255,0.05)'
+      : `rgba(242,103,34,${0.15 + t * 0.85})`
+    );
+
+  const fmt3 = d => {
+    const s = d.toISOString().split('T')[0];
+    return dataMap.get(s) || 0;
+  };
+
+  const svg = d3.select(container)
+    .append('svg')
+    .attr('width', W)
+    .attr('height', H)
+    .style('font-family', 'var(--ff)');
+
+  // Day labels
+  svg.selectAll('.day-lbl')
+    .data([0, 2, 4])
+    .join('text')
+    .attr('x', marginLeft - 4)
+    .attr('y', i => marginTop + i * 2 * step + step * 0.7)
+    .attr('text-anchor', 'end')
+    .attr('font-size', 9)
+    .attr('fill', '#555')
+    .text(i => days[i * 2]);
+
+  // Month labels
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  let lastMonth = -1;
+  weeks.forEach((wDates, weekIdx) => {
+    const firstDate = wDates[0];
+    const month = firstDate.getMonth();
+    if (month !== lastMonth) {
+      svg.append('text')
+        .attr('x', marginLeft + weekIdx * step)
+        .attr('y', marginTop - 6)
+        .attr('font-size', 9)
+        .attr('fill', '#555')
+        .text(monthNames[month]);
+      lastMonth = month;
+    }
+  });
+
+  // Cells
+  const tooltip = d3.select(container).append('div')
+    .style('position', 'absolute')
+    .style('background', '#18181b')
+    .style('border', '1px solid rgba(242,103,34,0.4)')
+    .style('border-radius', '6px')
+    .style('padding', '5px 10px')
+    .style('font-size', '11px')
+    .style('color', '#fff')
+    .style('pointer-events', 'none')
+    .style('opacity', 0)
+    .style('z-index', 9999);
+
+  d3.select(container).style('position', 'relative');
+
+  weeks.forEach((wDates, weekIdx) => {
+    svg.selectAll(null)
+      .data(wDates)
+      .join('rect')
+      .attr('x', marginLeft + weekIdx * step)
+      .attr('y', d => marginTop + d.getDay() * step)
+      .attr('width', cellSize)
+      .attr('height', cellSize)
+      .attr('rx', 2)
+      .attr('fill', d => colorScale(fmt3(d)))
+      .style('cursor', 'pointer')
+      .on('mouseover', function(event, d) {
+        const sessions = fmt3(d);
+        const dateStr = d.toLocaleDateString('es-DO', { weekday:'short', day:'numeric', month:'short' });
+        tooltip.style('opacity', 1)
+          .html(`<strong>${dateStr}</strong><br>${sessions.toLocaleString('es-DO')} sesiones`);
+        d3.select(this).attr('rx', 4).attr('opacity', 0.8);
+      })
+      .on('mousemove', function(event) {
+        tooltip
+          .style('left', (event.offsetX + 12) + 'px')
+          .style('top',  (event.offsetY - 28) + 'px');
+      })
+      .on('mouseout', function() {
+        tooltip.style('opacity', 0);
+        d3.select(this).attr('rx', 2).attr('opacity', 1);
+      });
+  });
+
+  // Legend
+  const legendG = svg.append('g').attr('transform', `translate(${W - 90}, ${H - 14})`);
+  legendG.append('text').attr('x', 0).attr('y', 10).attr('font-size', 9).attr('fill', '#555').text('Menos');
+  [0, 0.25, 0.5, 0.75, 1].forEach((t, i) => {
+    legendG.append('rect')
+      .attr('x', 35 + i * (cellSize + 2))
+      .attr('y', 1)
+      .attr('width', cellSize).attr('height', cellSize)
+      .attr('rx', 2)
+      .attr('fill', colorScale(t * maxVal));
+  });
+  legendG.append('text').attr('x', 35 + 5 * (cellSize + 2) + 4).attr('y', 10).attr('font-size', 9).attr('fill', '#555').text('Más');
+}
+
+// ── Auditoría Crawler 
 let auditAllResults = [];
 
 async function runAudit() {
