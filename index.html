@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <link rel="shortcut icon" href="/favico.png" type="image/x-icon">
 
 <meta name="robots" content="noindex, nofollow">
@@ -1397,6 +1398,14 @@ html,body{overflow-x:hidden;width:100%}
   <div class="card">
   <div class="card-title">Top Países</div>
   <div id="ga4-countries-list" style="margin-top:4px"></div>
+  </div>
+  </div>
+
+  <!-- Actividad diaria (heatmap) -->
+  <div class="card" style="margin-bottom:20px">
+  <div class="card-title" style="margin-bottom:12px">Actividad Diaria · Últimos 6 meses</div>
+  <div id="ga4-heatmap" style="overflow-x:auto;min-height:120px">
+    <div style="font-size:12px;color:var(--text3);padding:20px 0">Cargando actividad…</div>
   </div>
   </div>
 
@@ -3472,7 +3481,7 @@ function _renderGA4D3Charts(G) {
 
 // ── D3 Horizontal Bar Chart — Top Países ─────────────────────────────────────
 function renderD3Countries(data) {
-  const container = document.getElementById('ga4-countries-d3');
+  const container = document.getElementById('ga4-countries-list');
   if (!container || !data.length || typeof d3 === 'undefined') return;
   container.innerHTML = '';
 
