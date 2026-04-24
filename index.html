@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://www.gstatic.com/charts/loader.js"></script>
 <link rel="shortcut icon" href="/favico.png" type="image/x-icon">
 
 <meta name="robots" content="noindex, nofollow">
@@ -2485,9 +2485,9 @@ function showPage(name, el) {
     _loadGmbSection();
   }
 
-  // Render D3 analytics charts when analytics tab opens (D3 needs visible container)
+  // Re-render Google Charts cuando se abre la pestaña Analytics (el mapa necesita ancho real)
   if (name === 'analytics' && window._ga4FullData) {
-    setTimeout(() => _renderGA4D3Charts(window._ga4FullData), 50);
+    setTimeout(() => _renderGA4D3Charts(window._ga4FullData), 80);
   }
 }
 
@@ -3463,235 +3463,129 @@ function renderGA4(G) {
   _renderGA4D3Charts(G);
 }
 
-// Render D3 charts (called on data load + when analytics tab opens)
+// Render Google Charts (called on data load + when analytics tab opens)
 function _renderGA4D3Charts(G) {
   if (!G) return;
-  // If D3 not yet loaded, schedule retry
-  if (typeof d3 === 'undefined') {
-    setTimeout(() => _renderGA4D3Charts(G), 300);
-    return;
-  }
-  // If analytics page not visible, clientWidth will be 0 — defer
-  const analyticsPage = document.getElementById('page-analytics');
-  if (!analyticsPage?.classList.contains('active')) return; // will re-run when tab opens
-
-  renderD3Countries((G.countries || []).slice(0, 10));
+  // Render asíncronamente — Google Charts carga su propia librería via gcReady()
+  renderD3Countries((G.countries || []).slice(0, 20));
   renderD3Heatmap(G.daily6m || []);
 }
 
-// ── D3 Horizontal Bar Chart — Top Países ─────────────────────────────────────
-function renderD3Countries(data) {
-  const container = document.getElementById('ga4-countries-list');
-  if (!container || !data.length || typeof d3 === 'undefined') return;
-  container.innerHTML = '';
-
-  const W = container.clientWidth || 300;
-  const barH = 22, gap = 6, labelW = 110, valueW = 48;
-  const barW = W - labelW - valueW - 16;
-  const H = data.length * (barH + gap) + 4;
-
-  const maxVal = d3.max(data, d => d.sessions) || 1;
-  const x = d3.scaleLinear().domain([0, maxVal]).range([0, barW]);
-  const fmt2 = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
-
-  const svg = d3.select(container)
-    .append('svg')
-    .attr('width', W)
-    .attr('height', H)
-    .style('overflow', 'visible');
-
-  const g = svg.append('g').attr('transform', `translate(${labelW},0)`);
-
-  // Track background
-  g.selectAll('.track')
-    .data(data)
-    .join('rect')
-    .attr('class', 'track')
-    .attr('x', 0)
-    .attr('y', (_, i) => i * (barH + gap) + 2)
-    .attr('width', barW)
-    .attr('height', barH - 4)
-    .attr('rx', 4)
-    .attr('fill', 'rgba(255,255,255,0.04)');
-
-  // Bars — animated
-  g.selectAll('.bar')
-    .data(data)
-    .join('rect')
-    .attr('class', 'bar')
-    .attr('x', 0)
-    .attr('y', (_, i) => i * (barH + gap) + 2)
-    .attr('width', 0)
-    .attr('height', barH - 4)
-    .attr('rx', 4)
-    .attr('fill', (d, i) => i === 0 ? '#F26722' : `rgba(242,103,34,${0.55 - i * 0.04})`)
-    .transition().duration(700).delay((_, i) => i * 60)
-    .attr('width', d => Math.max(x(d.sessions), 2));
-
-  // Country labels (left)
-  svg.selectAll('.lbl')
-    .data(data)
-    .join('text')
-    .attr('class', 'lbl')
-    .attr('x', labelW - 8)
-    .attr('y', (_, i) => i * (barH + gap) + barH / 2 + 1)
-    .attr('text-anchor', 'end')
-    .attr('dominant-baseline', 'middle')
-    .attr('fill', '#aaa')
-    .attr('font-size', 11)
-    .text(d => d.country.length > 14 ? d.country.slice(0, 13) + '…' : d.country);
-
-  // Value labels (right of bar)
-  g.selectAll('.val')
-    .data(data)
-    .join('text')
-    .attr('class', 'val')
-    .attr('x', barW + 6)
-    .attr('y', (_, i) => i * (barH + gap) + barH / 2 + 1)
-    .attr('dominant-baseline', 'middle')
-    .attr('fill', '#666')
-    .attr('font-size', 10)
-    .attr('font-weight', '600')
-    .text(d => fmt2(d.sessions));
+// ── Google Charts — inicialización única ──────────────────────────────────────
+let _gcReady = null;
+function gcReady() {
+  if (_gcReady) return _gcReady;
+  _gcReady = new Promise(resolve => {
+    google.charts.load('current', { packages: ['geochart', 'calendar', 'bar'], language: 'es' });
+    google.charts.setOnLoadCallback(resolve);
+  });
+  return _gcReady;
 }
 
-// ── D3 GitHub-style Heatmap — Actividad diaria ────────────────────────────────
-function renderD3Heatmap(dailyData) {
-  const container = document.getElementById('ga4-heatmap');
-  if (!container || !dailyData.length || typeof d3 === 'undefined') return;
+// ── Google GeoChart — Top Países (mapa mundial) ───────────────────────────────
+async function renderD3Countries(data) {
+  const container = document.getElementById('ga4-countries-list');
+  if (!container) return;
+  if (!data.length) { container.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de países</div>'; return; }
+
+  container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0">Cargando mapa…</div>';
+  await gcReady();
   container.innerHTML = '';
 
-  const cellSize = 13, cellGap = 2, step = cellSize + cellGap;
-  const days = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
-  const marginLeft = 24, marginTop = 20;
+  // Detectar modo oscuro para el mapa
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    || window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 
-  // Parse data into date → sessions map
-  const dataMap = new Map(dailyData.map(d => [d.date, d.sessions]));
-  const maxVal  = d3.max(dailyData, d => d.sessions) || 1;
-
-  // Build date range (last 26 weeks = ~6 months)
-  const endDate   = new Date();
-  endDate.setDate(endDate.getDate() - endDate.getDay()); // last Sunday
-  const startDate = new Date(endDate);
-  startDate.setDate(startDate.getDate() - 26 * 7 + 1);
-
-  const allDates = [];
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    allDates.push(new Date(d));
-  }
-
-  // Group by week
-  const weeks = d3.group(allDates, d => {
-    const diff = Math.floor((d - startDate) / (7 * 24 * 3600 * 1000));
-    return diff;
+  const tableData = new google.visualization.DataTable();
+  tableData.addColumn('string', 'País');
+  tableData.addColumn('number', 'Sesiones');
+  tableData.addColumn({ type: 'string', role: 'tooltip' });
+  data.forEach(d => {
+    tableData.addRow([
+      d.country,
+      d.sessions,
+      `${d.country}\nSesiones: ${d.sessions.toLocaleString('es-DO')}\nUsuarios: ${d.users?.toLocaleString('es-DO') || '—'}\nEngagement: ${d.engagementRate ?? '—'}%`,
+    ]);
   });
 
-  const numWeeks = weeks.size;
-  const W = marginLeft + numWeeks * step + 10;
-  const H = marginTop + 7 * step + 4;
-
-  const colorScale = d3.scaleSequential()
-    .domain([0, maxVal])
-    .interpolator(t => t === 0
-      ? 'rgba(255,255,255,0.05)'
-      : `rgba(242,103,34,${0.15 + t * 0.85})`
-    );
-
-  const fmt3 = d => {
-    const s = d.toISOString().split('T')[0];
-    return dataMap.get(s) || 0;
+  const options = {
+    width:  '100%',
+    height: 200,
+    colorAxis: { colors: ['#ffd6b3', '#E8610A'] },
+    backgroundColor: 'transparent',
+    datalessRegionColor: isDark ? '#2a2a2a' : '#f0f0f0',
+    defaultColor: '#f5f5f5',
+    legend: { textStyle: { color: '#888', fontSize: 10 } },
+    tooltip: { isHtml: false },
   };
 
-  const svg = d3.select(container)
-    .append('svg')
-    .attr('width', W)
-    .attr('height', H)
-    .style('font-family', 'var(--ff)');
+  const chart = new google.visualization.GeoChart(container);
+  chart.draw(tableData, options);
 
-  // Day labels
-  svg.selectAll('.day-lbl')
-    .data([0, 2, 4])
-    .join('text')
-    .attr('x', marginLeft - 4)
-    .attr('y', i => marginTop + i * 2 * step + step * 0.7)
-    .attr('text-anchor', 'end')
-    .attr('font-size', 9)
-    .attr('fill', '#555')
-    .text(i => days[i * 2]);
+  // Tabla resumen debajo del mapa
+  const topList = data.slice(0, 8);
+  const maxS = topList[0]?.sessions || 1;
+  const table = document.createElement('div');
+  table.style.cssText = 'margin-top:10px;font-size:11px';
+  table.innerHTML = topList.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+      <span style="width:16px;color:var(--text3);font-size:10px">${i+1}</span>
+      <span style="flex:1;color:var(--text2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.country}</span>
+      <div style="width:60px;background:var(--border);border-radius:3px;height:6px;overflow:hidden">
+        <div style="width:${Math.round(d.sessions/maxS*100)}%;background:var(--orange);height:100%;border-radius:3px"></div>
+      </div>
+      <span style="width:38px;text-align:right;color:var(--text3)">${d.sessions >= 1000 ? (d.sessions/1000).toFixed(1)+'K' : d.sessions}</span>
+    </div>`).join('');
+  container.appendChild(table);
+}
 
-  // Month labels
-  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  let lastMonth = -1;
-  weeks.forEach((wDates, weekIdx) => {
-    const firstDate = wDates[0];
-    const month = firstDate.getMonth();
-    if (month !== lastMonth) {
-      svg.append('text')
-        .attr('x', marginLeft + weekIdx * step)
-        .attr('y', marginTop - 6)
-        .attr('font-size', 9)
-        .attr('fill', '#555')
-        .text(monthNames[month]);
-      lastMonth = month;
-    }
+// ── Google Charts Calendar — Actividad diaria (heatmap) ──────────────────────
+async function renderD3Heatmap(dailyData) {
+  const container = document.getElementById('ga4-heatmap');
+  if (!container) return;
+  if (!dailyData.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de actividad diaria</div>';
+    return;
+  }
+
+  container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0">Cargando calendario…</div>';
+  await gcReady();
+  container.innerHTML = '';
+
+  const tableData = new google.visualization.DataTable();
+  tableData.addColumn({ type: 'date',   id: 'Fecha' });
+  tableData.addColumn({ type: 'number', id: 'Sesiones' });
+
+  dailyData.forEach(d => {
+    if (!d.date) return;
+    const [y, m, day] = d.date.split('-').map(Number);
+    tableData.addRow([new Date(y, m - 1, day), d.sessions]);
   });
 
-  // Cells
-  const tooltip = d3.select(container).append('div')
-    .style('position', 'absolute')
-    .style('background', '#18181b')
-    .style('border', '1px solid rgba(242,103,34,0.4)')
-    .style('border-radius', '6px')
-    .style('padding', '5px 10px')
-    .style('font-size', '11px')
-    .style('color', '#fff')
-    .style('pointer-events', 'none')
-    .style('opacity', 0)
-    .style('z-index', 9999);
+  // Año más reciente con datos
+  const years = dailyData.map(d => parseInt(d.date?.slice(0,4))).filter(Boolean);
+  const maxYear = Math.max(...years);
 
-  d3.select(container).style('position', 'relative');
+  const options = {
+    width:  container.clientWidth || 700,
+    height: 165,
+    title:  '',
+    calendar: {
+      cellSize:       13,
+      cellColor:      { stroke: 'transparent', strokeOpacity: 0 },
+      focusedCellColor: { stroke: 'var(--orange)', strokeOpacity: 1 },
+      monthLabel:     { fontSize: 10, color: '#888', fontName: 'Barlow' },
+      dayOfWeekLabel: { fontSize: 9,  color: '#aaa', fontName: 'Barlow' },
+      dayOfWeekRightSpace: 0,
+      unusedMonthOutlineColor: { stroke: 'transparent' },
+    },
+    colorAxis:         { minValue: 0, colors: ['#f0e6dd', '#E8610A'] },
+    noDataPattern:     { backgroundColor: '#f5f5f5', color: '#ececec' },
+    tooltip:           { isHtml: false },
+  };
 
-  weeks.forEach((wDates, weekIdx) => {
-    svg.selectAll(null)
-      .data(wDates)
-      .join('rect')
-      .attr('x', marginLeft + weekIdx * step)
-      .attr('y', d => marginTop + d.getDay() * step)
-      .attr('width', cellSize)
-      .attr('height', cellSize)
-      .attr('rx', 2)
-      .attr('fill', d => colorScale(fmt3(d)))
-      .style('cursor', 'pointer')
-      .on('mouseover', function(event, d) {
-        const sessions = fmt3(d);
-        const dateStr = d.toLocaleDateString('es-DO', { weekday:'short', day:'numeric', month:'short' });
-        tooltip.style('opacity', 1)
-          .html(`<strong>${dateStr}</strong><br>${sessions.toLocaleString('es-DO')} sesiones`);
-        d3.select(this).attr('rx', 4).attr('opacity', 0.8);
-      })
-      .on('mousemove', function(event) {
-        tooltip
-          .style('left', (event.offsetX + 12) + 'px')
-          .style('top',  (event.offsetY - 28) + 'px');
-      })
-      .on('mouseout', function() {
-        tooltip.style('opacity', 0);
-        d3.select(this).attr('rx', 2).attr('opacity', 1);
-      });
-  });
-
-  // Legend
-  const legendG = svg.append('g').attr('transform', `translate(${W - 90}, ${H - 14})`);
-  legendG.append('text').attr('x', 0).attr('y', 10).attr('font-size', 9).attr('fill', '#555').text('Menos');
-  [0, 0.25, 0.5, 0.75, 1].forEach((t, i) => {
-    legendG.append('rect')
-      .attr('x', 35 + i * (cellSize + 2))
-      .attr('y', 1)
-      .attr('width', cellSize).attr('height', cellSize)
-      .attr('rx', 2)
-      .attr('fill', colorScale(t * maxVal));
-  });
-  legendG.append('text').attr('x', 35 + 5 * (cellSize + 2) + 4).attr('y', 10).attr('font-size', 9).attr('fill', '#555').text('Más');
+  const chart = new google.visualization.Calendar(container);
+  chart.draw(tableData, options);
 }
 
 // ── Auditoría Crawler 
