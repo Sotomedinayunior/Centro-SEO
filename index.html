@@ -3303,11 +3303,20 @@ function ga4SetPeriod(period, btn) {
     '6m':  GA4_DATA.daily6m  || [],
   };
   const rows = periodRows[period] || [];
+  const S    = GA4_DATA.summary || {};
 
-  // ── KPIs: sessions + users from daily aggregation ─────────────────────────
-  const totalSessions = rows.reduce((s, r) => s + (r.sessions || 0), 0);
-  const totalUsers    = rows.reduce((s, r) => s + (r.users    || 0), 0);
+  // ── KPIs: sessions + users from daily aggregation, fallback to summary ────
   const labels = { '7d': 'últimos 7 días', '28d': 'últimos 28 días', '6m': 'últimos 6 meses' };
+  let totalSessions, totalUsers;
+
+  if (rows.length > 0) {
+    totalSessions = rows.reduce((s, r) => s + (r.sessions || 0), 0);
+    totalUsers    = rows.reduce((s, r) => s + (r.users    || 0), 0);
+  } else {
+    // Daily data not available — fall back to summary (always 6m)
+    totalSessions = S.sessions;
+    totalUsers    = S.users;
+  }
 
   el('ga4-kpi-sessions', _ga4Fmt(totalSessions));
   el('ga4-kpi-users',    _ga4Fmt(totalUsers));
@@ -3359,10 +3368,17 @@ function renderGA4(G) {
   GA4_DATA = G;
   const S = G.summary || {};
 
-  // Static KPIs (always 6m — no daily equivalent)
+  // Fill ALL KPIs immediately from summary (reliable 6m data)
+  el('ga4-kpi-sessions',   _ga4Fmt(S.sessions));
+  el('ga4-kpi-users',      _ga4Fmt(S.users));
   el('ga4-kpi-newusers',   _ga4Fmt(S.newUsers));
   el('ga4-kpi-engagement', (S.engagementRate || 0) + '%');
   el('ga4-kpi-pageviews',  _ga4Fmt(S.pageViews));
+  // Mark period labels as 6m (will update when user changes filter)
+  const subEl1 = document.getElementById('ga4-sub-sessions');
+  const subEl2 = document.getElementById('ga4-sub-users');
+  if (subEl1) subEl1.textContent = 'últimos 6 meses';
+  if (subEl2) subEl2.textContent = 'últimos 6 meses';
 
   // Show filter bar
   const filterBar = document.getElementById('ga4-filter-bar');
@@ -3392,7 +3408,7 @@ function renderGA4(G) {
   },
   });
 
-  // Apply default period (28d) to update sessions+users KPIs
+  // Apply default period — only updates chart, KPIs already set from summary above
   ga4SetPeriod('28d', document.getElementById('ga4-tab-28d'));
 
   // Channels donut
