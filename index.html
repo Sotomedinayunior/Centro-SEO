@@ -3473,10 +3473,22 @@ function renderForecast(D) {
   const raw = D.chart.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
   const n   = raw.length;
 
-  // Parse dates: GSC returns YYYYMMDD
+  // Parse dates: GSC returns YYYY-MM-DD (with dashes), NOT YYYYMMDD
   function _fcDate(s) {
     const t = String(s);
+    if (t.includes('-')) {
+      const [yr, mo, dy] = t.split('-');
+      return new Date(+yr, +mo - 1, +dy);
+    }
+    // fallback: YYYYMMDD (GA4 style)
     return new Date(+t.slice(0,4), +t.slice(4,6)-1, +t.slice(6,8));
+  }
+
+  // Helper: extract YYYY-MM key from a date string (handles both YYYY-MM-DD and YYYYMMDD)
+  function _monthKey(s) {
+    const t = String(s);
+    if (t.includes('-')) return t.slice(0, 7); // YYYY-MM-DD → YYYY-MM
+    return t.slice(0,4) + '-' + t.slice(4,6);  // YYYYMMDD → YYYY-MM
   }
 
   // ── 2. Regresión lineal (mínimos cuadrados) ───────────────────────
@@ -3576,103 +3588,103 @@ function renderForecast(D) {
   fillKpi('fc-kpi-60d','fc-sub-60d', p60, clicks60hist);
   fillKpi('fc-kpi-90d','fc-sub-90d', p90, clicks90hist);
 
-  // ── 6. Google Charts — main combo chart ──────────────────────────
+  // ── 6. Google Charts — main chart + monthly bar ──────────────────
   _whenGCReady(function() {
-    // ── Main chart ───────────────────────────────────────────────
+
+    // ── Main chart: LineChart con intervalos para CI band ─────────
     const chartEl = document.getElementById('fc-main-chart');
     if (chartEl) {
       const data = new google.visualization.DataTable();
       data.addColumn('date',   'Fecha');
+      // Serie 0: histórico
       data.addColumn('number', 'Clics históricos');
-      data.addColumn('number', 'Tendencia');
+      // Serie 1: proyección + intervalos CI (interval role aplica a la serie anterior)
       data.addColumn('number', 'Proyección');
-      data.addColumn('number', 'CI Mín');
-      data.addColumn('number', 'CI Máx');
+      data.addColumn({type:'number', role:'interval'});  // CI bajo
+      data.addColumn({type:'number', role:'interval'});  // CI alto
 
-      // Historical rows
+      // Filas históricas — solo serie 0 tiene valor
       raw.forEach((r, i) => {
         const d  = _fcDate(r.date);
         const cl = Number(r.clicks) || 0;
-        const tr = predict(i);
-        data.addRow([d, cl, tr, null, null, null]);
+        data.addRow([d, cl, null, null, null]);
       });
 
-      // Forecast rows (next 90 days)
+      // Último punto histórico = primer punto de proyección (para unir líneas)
+      const lastHistDate = _fcDate(raw[n - 1].date);
+      const lastHistVal  = predict(n - 1);
+      data.addRow([lastHistDate, null, lastHistVal, Math.max(0, lastHistVal - CI), lastHistVal + CI]);
+
+      // Filas de proyección (90 días hacia adelante)
       for (let d = 1; d <= 90; d++) {
-        const fc   = predict(n - 1 + d);
-        const fcD  = new Date(lastDate);
+        const fc  = Math.max(0, predict(n - 1 + d));
+        const fcD = new Date(lastDate);
         fcD.setDate(fcD.getDate() + d);
-        const ciLo = Math.max(0, fc - CI);
-        const ciHi = fc + CI;
-        data.addRow([fcD, null, null, fc, ciLo, ciHi]);
+        data.addRow([fcD, null, fc, Math.max(0, fc - CI), fc + CI]);
       }
 
-      const view = new google.visualization.DataView(data);
-
-      const orange      = '#E8610A';
-      const orangeLight = 'rgba(232,97,10,0.5)';
-      const orangeBand  = 'rgba(232,97,10,0.10)';
-
-      const chart = new google.visualization.ComboChart(chartEl);
+      const chart = new google.visualization.LineChart(chartEl);
       chart.draw(data, {
-        seriesType: 'line',
+        backgroundColor: 'transparent',
+        chartArea: { left: 60, top: 20, right: 24, bottom: 56, width: '100%', height: '100%' },
+        legend: { position: 'none' },
         series: {
-          0: { color: orange,      lineWidth: 2.5, pointSize: 0, type: 'line' },
-          1: { color: '#aaa',      lineWidth: 1.5, pointSize: 0, type: 'line', lineDashStyle: [4,3] },
-          2: { color: orangeLight, lineWidth: 2.5, pointSize: 0, type: 'line', lineDashStyle: [6,3] },
-          3: { color: orangeBand,  lineWidth: 0,   pointSize: 0, type: 'area', areaOpacity: 0.18 },
-          4: { color: orangeBand,  lineWidth: 0,   pointSize: 0, type: 'area', areaOpacity: 0.18 }
+          0: { color: '#E8610A', lineWidth: 2.5, pointSize: 0 },
+          1: { color: 'rgba(232,97,10,0.55)', lineWidth: 2, pointSize: 0, lineDashStyle: [6, 3] }
         },
-        backgroundColor:  'transparent',
-        chartArea:        { left: 56, top: 16, right: 16, bottom: 52, width: '100%', height: '100%' },
-        legend:           { position: 'none' },
+        intervals: { style: 'area', color: 'rgba(232,97,10,0.12)', lineWidth: 0 },
         hAxis: {
           format: 'MMM d',
           textStyle: { color: '#888', fontSize: 11 },
           gridlines: { color: 'transparent' },
-          baselineColor: 'transparent'
+          baselineColor: '#e0deda'
         },
         vAxis: {
           textStyle: { color: '#888', fontSize: 11 },
           gridlines: { color: 'rgba(0,0,0,0.05)' },
-          baseline: 0
+          minValue: 0
         },
-        tooltip:     { isHtml: false },
-        animation:   { startup: true, duration: 800, easing: 'out' },
-        interpolateNulls: false
+        tooltip:   { isHtml: false },
+        animation: { startup: true, duration: 900, easing: 'out' },
+        interpolateNulls: true
       });
     }
 
-    // ── Monthly bar chart (historical) ───────────────────────────
+    // ── Monthly bar chart (histórico mensual) ─────────────────────
     const mbEl = document.getElementById('fc-monthly-chart');
     if (mbEl) {
       const monthMap = {};
       raw.forEach(r => {
-        const s   = String(r.date);
-        const key = s.slice(0,4) + '-' + s.slice(4,6);
+        const key = _monthKey(r.date);  // fixed: handles both date formats
         monthMap[key] = (monthMap[key] || 0) + (Number(r.clicks) || 0);
       });
+
       const mbData = new google.visualization.DataTable();
       mbData.addColumn('string', 'Mes');
       mbData.addColumn('number', 'Clics');
-      mbData.addColumn({type:'string', role:'style'});
+      mbData.addColumn({ type: 'string', role: 'style' });
+
       const months = Object.keys(monthMap).sort();
-      const maxV   = Math.max(...Object.values(monthMap));
+      const maxV   = Math.max(...Object.values(monthMap), 1);
+
       months.forEach(m => {
         const v     = monthMap[m];
-        const inten = 0.35 + 0.65 * (v / maxV);
+        const alpha = (0.35 + 0.65 * (v / maxV)).toFixed(2);
         const [yr, mo] = m.split('-');
-        const label = new Date(+yr, +mo-1, 1).toLocaleDateString('es-DO',{month:'short',year:'2-digit'});
-        mbData.addRow([label, v, `color: rgba(232,97,10,${inten.toFixed(2)})`]);
+        const label = new Date(+yr, +mo - 1, 1)
+          .toLocaleDateString('es-DO', { month: 'short', year: '2-digit' });
+        mbData.addRow([label, v, `color: rgba(232,97,10,${alpha})`]);
       });
-      const mbChart = new google.visualization.BarChart(mbEl);
+
+      const mbChart = new google.visualization.ColumnChart(mbEl);
       mbChart.draw(mbData, {
         backgroundColor: 'transparent',
-        chartArea: { left: 48, top: 4, right: 8, bottom: 28, width:'100%', height:'100%' },
-        legend: { position: 'none' },
-        hAxis: { textStyle:{color:'#888',fontSize:10}, gridlines:{color:'transparent'}, baselineColor:'transparent' },
-        vAxis: { textStyle:{color:'#888',fontSize:10}, gridlines:{color:'rgba(0,0,0,0.05)'} },
-        animation: { startup:true, duration:600, easing:'out' }
+        chartArea: { left: 50, top: 6, right: 8, bottom: 32, width: '100%', height: '100%' },
+        legend:    { position: 'none' },
+        bar:       { groupWidth: '70%' },
+        hAxis: { textStyle: { color: '#888', fontSize: 10 }, gridlines: { color: 'transparent' }, baselineColor: '#e0deda' },
+        vAxis: { textStyle: { color: '#888', fontSize: 10 }, gridlines: { color: 'rgba(0,0,0,0.05)' }, minValue: 0 },
+        animation: { startup: true, duration: 600, easing: 'out' }
       });
     }
   });
