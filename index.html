@@ -620,6 +620,10 @@ html,body{overflow-x:hidden;width:100%}
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L5 8 L8 10 L11 5 L14 3" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 3h3v3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="13" r="1" fill="currentColor" stroke="none"/></svg>
   Valor del Tráfico
   </div>
+  <div class="nav-item" data-page="forecast" onclick="showPage('forecast',this)">
+  <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13 L5 9 L8 10 L12 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 5 L15 2" stroke-linecap="round" stroke-dasharray="2 1.5"/><circle cx="15" cy="2" r="1.2" fill="currentColor" stroke="none"/></svg>
+  Forecast
+  </div>
   <div class="nav-item" data-page="aiplan" onclick="showPage('aiplan',this)">
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 C5 1.5 3 3.5 3 6c0 1.5 0.7 2.8 1.8 3.6L4.5 12h7l-0.3-2.4C12.3 8.8 13 7.5 13 6c0-2.5-2-4.5-5-4.5z"/><path d="M5.5 12.5 v1 a2.5 2.5 0 0 0 5 0 v-1" stroke-linecap="round"/></svg>
   Plan IA
@@ -1545,6 +1549,107 @@ html,body{overflow-x:hidden;width:100%}
       <strong style="color:var(--text)">Genérico/informacional</strong>: $0.75/clic.
       Los clics mensuales son el promedio de los últimos 6 meses reportados por Google Search Console.
       Este cálculo representa el <em>ahorro mensual real</em> que genera el SEO frente a depender exclusivamente de publicidad pagada.
+    </div>
+  </div>
+</div>
+
+<!-- =========== PAGE: FORECAST =========== -->
+<div id="page-forecast" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">📈 Forecast de Tráfico</div>
+      <div class="page-sub">Proyección de clics orgánicos a 30 / 60 / 90 días · Modelo de regresión lineal sobre datos GSC</div>
+    </div>
+  </div>
+
+  <!-- Trend Hero Banner -->
+  <div id="fc-trend-banner" style="border-radius:var(--radius);padding:26px 32px;margin-bottom:28px;display:flex;align-items:center;gap:28px;flex-wrap:wrap;position:relative;overflow:hidden;border:1px solid transparent">
+    <div id="fc-trend-arrow" style="font-size:56px;line-height:1;flex-shrink:0">—</div>
+    <div style="flex:1;min-width:200px">
+      <div id="fc-trend-label" style="font-family:var(--ffc);font-size:22px;font-weight:700;margin-bottom:6px">Calculando tendencia…</div>
+      <div id="fc-trend-desc" style="font-size:13px;line-height:1.65;max-width:680px"></div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div id="fc-r2-val" style="font-family:var(--ffc);font-size:28px;font-weight:700">—</div>
+      <div style="font-size:11px;color:#888;margin-top:3px">Confianza del modelo (R²)</div>
+    </div>
+  </div>
+
+  <!-- KPI cards: proyecciones -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:28px">
+    <div class="kpi-card">
+      <div class="kpi-label">Tendencia diaria</div>
+      <div class="kpi-value" id="fc-kpi-slope">—</div>
+      <div class="kpi-sub">clics/día de variación</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Próximos 30 días</div>
+      <div class="kpi-value" id="fc-kpi-30d">—</div>
+      <div class="kpi-sub" id="fc-sub-30d">clics proyectados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Próximos 60 días</div>
+      <div class="kpi-value" id="fc-kpi-60d">—</div>
+      <div class="kpi-sub" id="fc-sub-60d">clics proyectados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Próximos 90 días</div>
+      <div class="kpi-value" id="fc-kpi-90d">—</div>
+      <div class="kpi-sub" id="fc-sub-90d">clics proyectados</div>
+    </div>
+  </div>
+
+  <!-- Chart principal -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header-flex" style="margin-bottom:18px">
+      <div class="card-title" style="margin-bottom:0">Histórico + Proyección — Clics Diarios</div>
+      <div style="display:flex;align-items:center;gap:16px;font-size:11px;color:var(--text3)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:24px;height:3px;background:var(--orange);border-radius:2px;display:inline-block"></span>Histórico</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:24px;height:3px;background:var(--orange);opacity:0.45;border-radius:2px;display:inline-block;border-top:2px dashed var(--orange)"></span>Proyección</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:24px;height:8px;background:rgba(242,103,34,0.12);border-radius:2px;display:inline-block"></span>Intervalo de confianza</span>
+      </div>
+    </div>
+    <div id="fc-main-chart" style="width:100%;height:340px"></div>
+  </div>
+
+  <!-- Tabla mensual + Modelo -->
+  <div class="grid-65" style="margin-bottom:28px">
+    <div class="card">
+      <div class="card-title">Proyección Mensual Detallada</div>
+      <table class="data-table" style="font-size:13px">
+        <thead>
+          <tr>
+            <th style="text-align:left">Mes</th>
+            <th>Clics estimados</th>
+            <th>Rango mínimo</th>
+            <th>Rango máximo</th>
+            <th>vs. período anterior</th>
+          </tr>
+        </thead>
+        <tbody id="fc-monthly-body">
+          <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Parámetros del Modelo</div>
+      <div id="fc-model-stats" style="font-size:13px"></div>
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+        <div class="card-title" style="margin-bottom:12px">Distribución Mensual — Histórico</div>
+        <div id="fc-monthly-chart" style="width:100%;height:160px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nota metodológica -->
+  <div class="card" style="background:var(--surface2);border-style:dashed">
+    <div class="card-title">Metodología</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.75;max-width:800px">
+      El modelo aplica <strong style="color:var(--text)">regresión lineal por mínimos cuadrados</strong> sobre los datos diarios de clics de Google Search Console de los últimos 6 meses.
+      El <strong style="color:var(--text)">coeficiente R²</strong> indica qué tan bien se ajusta la línea a los datos históricos (1.0 = ajuste perfecto, &lt;0.3 = alta variabilidad).
+      El <strong style="color:var(--text)">intervalo de confianza</strong> se calcula como ±1.5 desviaciones estándar de los residuales.
+      Esta proyección asume continuidad de las condiciones actuales de SEO — cambios en algoritmos, estacionalidad o acciones de marketing pueden alterar los resultados.
     </div>
   </div>
 </div>
@@ -3358,7 +3463,311 @@ function renderInsights(D) {
   }
 }
 
-// Render GMB 
+// ═══════════════════════════════════════════════════════════════════
+// FORECAST DE TRÁFICO
+// ═══════════════════════════════════════════════════════════════════
+function renderForecast(D) {
+  if (!D || !D.chart || D.chart.length < 14) return;
+
+  // ── 1. Preparar serie histórica ───────────────────────────────────
+  const raw = D.chart.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const n   = raw.length;
+
+  // Parse dates: GSC returns YYYYMMDD
+  function _fcDate(s) {
+    const t = String(s);
+    return new Date(+t.slice(0,4), +t.slice(4,6)-1, +t.slice(6,8));
+  }
+
+  // ── 2. Regresión lineal (mínimos cuadrados) ───────────────────────
+  const xs = raw.map((_, i) => i);
+  const ys = raw.map(r => Number(r.clicks) || 0);
+  const xMean = xs.reduce((a, x) => a + x, 0) / n;
+  const yMean = ys.reduce((a, y) => a + y, 0) / n;
+  const ssXX  = xs.reduce((a, x) => a + (x - xMean) ** 2, 0);
+  const ssXY  = xs.reduce((a, x, i) => a + (x - xMean) * (ys[i] - yMean), 0);
+  const slope = ssXX ? ssXY / ssXX : 0;
+  const intercept = yMean - slope * xMean;
+
+  // R²
+  const ssTot = ys.reduce((a, y) => a + (y - yMean) ** 2, 0);
+  const ssRes = ys.reduce((a, y, i) => a + (y - (intercept + slope * i)) ** 2, 0);
+  const r2    = ssTot ? Math.max(0, 1 - ssRes / ssTot) : 0;
+
+  // Residual std dev → ±1.5σ confidence band
+  const sigma = Math.sqrt(ssRes / Math.max(1, n - 2));
+  const CI    = sigma * 1.5;
+
+  // ── 3. Proyección 90 días ────────────────────────────────────────
+  const lastDate = _fcDate(raw[n - 1].date);
+  const predict  = (dayIdx) => Math.max(0, intercept + slope * dayIdx);
+
+  // Helper: clics para próximos N días (sum)
+  function sumNextDays(days) {
+    let s = 0;
+    for (let d = 1; d <= days; d++) s += predict(n - 1 + d);
+    return Math.round(s);
+  }
+
+  const p30 = sumNextDays(30);
+  const p60 = sumNextDays(60);
+  const p90 = sumNextDays(90);
+
+  // Last-period baselines for comparison
+  const clicks30hist = ys.slice(-30).reduce((a, v) => a + v, 0);
+  const clicks60hist = ys.slice(-60).reduce((a, v) => a + v, 0);
+  const clicks90hist = ys.reduce((a, v) => a + v, 0);
+
+  const fmt = (v) => v >= 1000 ? (v/1000).toFixed(1)+'K' : String(Math.round(v));
+  const pct  = (a, b) => b ? ((a - b) / b * 100).toFixed(1) : '0.0';
+  const sign  = (v) => v >= 0 ? '+' : '';
+
+  // ── 4. Trend banner ──────────────────────────────────────────────
+  const banner     = document.getElementById('fc-trend-banner');
+  const arrowEl    = document.getElementById('fc-trend-arrow');
+  const labelEl    = document.getElementById('fc-trend-label');
+  const descEl     = document.getElementById('fc-trend-desc');
+  const r2El       = document.getElementById('fc-r2-val');
+
+  const slopePerDay  = slope.toFixed(2);
+  const trendUp      = slope >= 0;
+  const slopeAbsWeek = Math.abs(slope * 7).toFixed(0);
+
+  if (banner) {
+    if (trendUp) {
+      banner.style.background = 'linear-gradient(135deg,#0f2a1a 0%,#1a3d28 100%)';
+      banner.style.borderColor = '#27a663';
+      if (arrowEl) { arrowEl.textContent = '↗'; arrowEl.style.color = '#2ecc71'; }
+      if (labelEl) { labelEl.textContent = 'Tendencia Positiva — El tráfico está creciendo'; labelEl.style.color = '#2ecc71'; }
+    } else {
+      banner.style.background = 'linear-gradient(135deg,#2a0f0f 0%,#3d1a1a 100%)';
+      banner.style.borderColor = '#e24b4a';
+      if (arrowEl) { arrowEl.textContent = '↘'; arrowEl.style.color = '#e24b4a'; }
+      if (labelEl) { labelEl.textContent = 'Tendencia Negativa — El tráfico está descendiendo'; labelEl.style.color = '#e24b4a'; }
+    }
+    if (descEl) {
+      const direction = trendUp ? 'ganando' : 'perdiendo';
+      descEl.style.color = '#aaa';
+      descEl.innerHTML = `El modelo detecta que el sitio está <strong style="color:#fff">${direction} ~${slopeAbsWeek} clics por semana</strong>.
+        Con base en los últimos ${n} días de datos de Search Console, se proyectan <strong style="color:#fff">${fmt(p90)} clics</strong> para los próximos 90 días.
+        ${r2 >= 0.6 ? '✅ El modelo tiene alta confianza.' : r2 >= 0.35 ? '⚠️ Confianza moderada — hay variabilidad estacional.' : '⚠️ Baja confianza — hay alta variabilidad en los datos.'}`;
+    }
+    if (r2El) {
+      r2El.textContent = (r2 * 100).toFixed(0) + '%';
+      r2El.style.color = r2 >= 0.6 ? '#2ecc71' : r2 >= 0.35 ? '#f39c12' : '#e24b4a';
+    }
+  }
+
+  // ── 5. KPI cards ──────────────────────────────────────────────────
+  const slopeEl = document.getElementById('fc-kpi-slope');
+  if (slopeEl) {
+    slopeEl.textContent = (slope >= 0 ? '+' : '') + slopePerDay;
+    slopeEl.style.color = trendUp ? 'var(--green)' : 'var(--red)';
+  }
+
+  function fillKpi(valId, subId, projected, hist) {
+    const el  = document.getElementById(valId);
+    const sub = document.getElementById(subId);
+    if (el) { el.textContent = fmt(projected); el.style.color = projected >= hist ? 'var(--green)' : 'var(--red)'; }
+    const delta = pct(projected, hist);
+    if (sub) sub.innerHTML = `clics proyectados &nbsp;<span style="font-weight:600;color:${projected>=hist?'var(--green)':'var(--red)'}">${sign(parseFloat(delta))}${delta}%</span> vs período anterior`;
+  }
+  fillKpi('fc-kpi-30d','fc-sub-30d', p30, clicks30hist);
+  fillKpi('fc-kpi-60d','fc-sub-60d', p60, clicks60hist);
+  fillKpi('fc-kpi-90d','fc-sub-90d', p90, clicks90hist);
+
+  // ── 6. Google Charts — main combo chart ──────────────────────────
+  _whenGCReady(function() {
+    // ── Main chart ───────────────────────────────────────────────
+    const chartEl = document.getElementById('fc-main-chart');
+    if (chartEl) {
+      const data = new google.visualization.DataTable();
+      data.addColumn('date',   'Fecha');
+      data.addColumn('number', 'Clics históricos');
+      data.addColumn('number', 'Tendencia');
+      data.addColumn('number', 'Proyección');
+      data.addColumn('number', 'CI Mín');
+      data.addColumn('number', 'CI Máx');
+
+      // Historical rows
+      raw.forEach((r, i) => {
+        const d  = _fcDate(r.date);
+        const cl = Number(r.clicks) || 0;
+        const tr = predict(i);
+        data.addRow([d, cl, tr, null, null, null]);
+      });
+
+      // Forecast rows (next 90 days)
+      for (let d = 1; d <= 90; d++) {
+        const fc   = predict(n - 1 + d);
+        const fcD  = new Date(lastDate);
+        fcD.setDate(fcD.getDate() + d);
+        const ciLo = Math.max(0, fc - CI);
+        const ciHi = fc + CI;
+        data.addRow([fcD, null, null, fc, ciLo, ciHi]);
+      }
+
+      const view = new google.visualization.DataView(data);
+
+      const orange      = '#E8610A';
+      const orangeLight = 'rgba(232,97,10,0.5)';
+      const orangeBand  = 'rgba(232,97,10,0.10)';
+
+      const chart = new google.visualization.ComboChart(chartEl);
+      chart.draw(data, {
+        seriesType: 'line',
+        series: {
+          0: { color: orange,      lineWidth: 2.5, pointSize: 0, type: 'line' },
+          1: { color: '#aaa',      lineWidth: 1.5, pointSize: 0, type: 'line', lineDashStyle: [4,3] },
+          2: { color: orangeLight, lineWidth: 2.5, pointSize: 0, type: 'line', lineDashStyle: [6,3] },
+          3: { color: orangeBand,  lineWidth: 0,   pointSize: 0, type: 'area', areaOpacity: 0.18 },
+          4: { color: orangeBand,  lineWidth: 0,   pointSize: 0, type: 'area', areaOpacity: 0.18 }
+        },
+        backgroundColor:  'transparent',
+        chartArea:        { left: 56, top: 16, right: 16, bottom: 52, width: '100%', height: '100%' },
+        legend:           { position: 'none' },
+        hAxis: {
+          format: 'MMM d',
+          textStyle: { color: '#888', fontSize: 11 },
+          gridlines: { color: 'transparent' },
+          baselineColor: 'transparent'
+        },
+        vAxis: {
+          textStyle: { color: '#888', fontSize: 11 },
+          gridlines: { color: 'rgba(0,0,0,0.05)' },
+          baseline: 0
+        },
+        tooltip:     { isHtml: false },
+        animation:   { startup: true, duration: 800, easing: 'out' },
+        interpolateNulls: false
+      });
+    }
+
+    // ── Monthly bar chart (historical) ───────────────────────────
+    const mbEl = document.getElementById('fc-monthly-chart');
+    if (mbEl) {
+      const monthMap = {};
+      raw.forEach(r => {
+        const s   = String(r.date);
+        const key = s.slice(0,4) + '-' + s.slice(4,6);
+        monthMap[key] = (monthMap[key] || 0) + (Number(r.clicks) || 0);
+      });
+      const mbData = new google.visualization.DataTable();
+      mbData.addColumn('string', 'Mes');
+      mbData.addColumn('number', 'Clics');
+      mbData.addColumn({type:'string', role:'style'});
+      const months = Object.keys(monthMap).sort();
+      const maxV   = Math.max(...Object.values(monthMap));
+      months.forEach(m => {
+        const v     = monthMap[m];
+        const inten = 0.35 + 0.65 * (v / maxV);
+        const [yr, mo] = m.split('-');
+        const label = new Date(+yr, +mo-1, 1).toLocaleDateString('es-DO',{month:'short',year:'2-digit'});
+        mbData.addRow([label, v, `color: rgba(232,97,10,${inten.toFixed(2)})`]);
+      });
+      const mbChart = new google.visualization.BarChart(mbEl);
+      mbChart.draw(mbData, {
+        backgroundColor: 'transparent',
+        chartArea: { left: 48, top: 4, right: 8, bottom: 28, width:'100%', height:'100%' },
+        legend: { position: 'none' },
+        hAxis: { textStyle:{color:'#888',fontSize:10}, gridlines:{color:'transparent'}, baselineColor:'transparent' },
+        vAxis: { textStyle:{color:'#888',fontSize:10}, gridlines:{color:'rgba(0,0,0,0.05)'} },
+        animation: { startup:true, duration:600, easing:'out' }
+      });
+    }
+  });
+
+  // ── 7. Monthly projection table ───────────────────────────────────
+  const tbody = document.getElementById('fc-monthly-body');
+  if (tbody) {
+    tbody.innerHTML = '';
+    let prevClicks = null;
+    for (let m = 1; m <= 3; m++) {
+      const startDay = (m - 1) * 30 + 1;
+      const endDay   = m * 30;
+      let sum = 0, sumLo = 0, sumHi = 0;
+      for (let d = startDay; d <= endDay; d++) {
+        const fc = predict(n - 1 + d);
+        sum   += Math.max(0, fc);
+        sumLo += Math.max(0, fc - CI);
+        sumHi += fc + CI;
+      }
+      sum   = Math.round(sum);
+      sumLo = Math.round(sumLo);
+      sumHi = Math.round(sumHi);
+
+      const fDate = new Date(lastDate);
+      fDate.setDate(fDate.getDate() + startDay);
+      const monthName = fDate.toLocaleDateString('es-DO', { month:'long', year:'numeric' });
+
+      const vsHist = n >= endDay ? ys.slice(-(endDay)).slice(0,30).reduce((a,v)=>a+v,0) : null;
+      let vsStr = '—';
+      if (vsHist !== null) {
+        const delta = pct(sum, vsHist);
+        const col   = sum >= vsHist ? 'var(--green)' : 'var(--red)';
+        vsStr = `<span style="color:${col};font-weight:600">${sign(parseFloat(delta))}${delta}%</span>`;
+      } else if (prevClicks !== null) {
+        const delta = pct(sum, prevClicks);
+        const col   = sum >= prevClicks ? 'var(--green)' : 'var(--red)';
+        vsStr = `<span style="color:${col};font-weight:600">${sign(parseFloat(delta))}${delta}%</span>`;
+      }
+
+      const labelStyle = m === 1 ? 'font-weight:600;color:var(--text)' : 'color:var(--text2)';
+      const badge      = m === 1 ? '<span style="background:var(--orange-pale);color:var(--orange);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:8px">próximo</span>' : '';
+      tbody.innerHTML += `
+        <tr>
+          <td style="text-align:left;${labelStyle}">${monthName}${badge}</td>
+          <td style="text-align:center;font-family:var(--ffc);font-weight:700;font-size:15px">${fmt(sum)}</td>
+          <td style="text-align:center;color:var(--text3)">${fmt(sumLo)}</td>
+          <td style="text-align:center;color:var(--text3)">${fmt(sumHi)}</td>
+          <td style="text-align:center">${vsStr}</td>
+        </tr>`;
+      prevClicks = sum;
+    }
+  }
+
+  // ── 8. Model stats panel ──────────────────────────────────────────
+  const statsEl = document.getElementById('fc-model-stats');
+  if (statsEl) {
+    const lastClicks = ys.slice(-30).reduce((a,v)=>a+v,0);
+    const r2Color    = r2 >= 0.6 ? 'var(--green)' : r2 >= 0.35 ? '#f39c12' : 'var(--red)';
+    const r2Label    = r2 >= 0.6 ? 'Alta' : r2 >= 0.35 ? 'Moderada' : 'Baja';
+
+    statsEl.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 4px;color:var(--text2)">Días de datos</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:600">${n}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 4px;color:var(--text2)">Clics/día (último mes)</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:600">${(lastClicks/30).toFixed(1)}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 4px;color:var(--text2)">Pendiente (slope)</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:600;color:${trendUp?'var(--green)':'var(--red)'}">${sign(slope)}${slope.toFixed(3)} clics/día</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 4px;color:var(--text2)">Intercepto</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:600">${intercept.toFixed(1)}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 4px;color:var(--text2)">Desv. estándar residual (σ)</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:600">${sigma.toFixed(1)}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 4px;color:var(--text2)">Intervalo confianza (±1.5σ)</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:600">±${Math.round(CI)}</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 4px;color:var(--text2)">R² — Confianza del modelo</td>
+          <td style="padding:9px 4px;text-align:right;font-weight:700;color:${r2Color}">${(r2*100).toFixed(1)}% <span style="font-size:11px;font-weight:400">(${r2Label})</span></td>
+        </tr>
+      </table>`;
+  }
+}
+
+// Render GMB
 function renderGMB(G) {
   if (!G) return;
 
@@ -4861,6 +5270,7 @@ async function bootDashboard() {
 
   try { render(safeD); }              catch(e) { console.error('[render]',    e); }
   try { renderTrafficValue(safeD); }  catch(e) { console.error('[renderTrafficValue]', e); }
+  try { renderForecast(safeD); }      catch(e) { console.error('[renderForecast]', e); }
   try { renderGMB(safeD.gmb || null); } catch(e) { console.error('[renderGMB]', e); }
   try { renderGA4(safeD.ga4 || null); } catch(e) {
     console.error('[renderGA4] ERROR COMPLETO:', e);
