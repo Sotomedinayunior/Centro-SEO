@@ -3441,7 +3441,7 @@ function renderGA4(G) {
           <div class="ga4-bar-row">
             <div class="ga4-bar-label">${d.device}</div>
             <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(d.sessions/maxDev*100)}%"></div></div>
-            <div class="ga4-bar-val">${fmt(d.sessions)}</div>
+            <div class="ga4-bar-val">${_ga4Fmt(d.sessions)}</div>
           </div>`).join('');
       } else {
         devContainer.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de dispositivos</div>';
@@ -3463,8 +3463,8 @@ function renderGA4(G) {
           : p.avgDuration+'s';
         return `<tr style="border-bottom:1px solid var(--border)">
           <td style="padding:8px 6px;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.page}</td>
-          <td style="padding:8px 6px;text-align:right;font-weight:600">${fmt(p.pageViews)}</td>
-          <td style="padding:8px 6px;text-align:right">${fmt(p.sessions)}</td>
+          <td style="padding:8px 6px;text-align:right;font-weight:600">${_ga4Fmt(p.pageViews)}</td>
+          <td style="padding:8px 6px;text-align:right">${_ga4Fmt(p.sessions)}</td>
           <td style="padding:8px 6px;text-align:right;color:var(--text2)">${dur}</td>
           <td style="padding:8px 6px;text-align:right;color:${p.engagementRate>=50?GR:'var(--text2)'}">${p.engagementRate}%</td>
         </tr>`;
@@ -3559,7 +3559,10 @@ function renderD3Heatmap(dailyData) {
   // Group by week label for readability when many days
   const labels = last90.map(d => {
     if (!d.date) return '';
-    const [, m, day] = d.date.split('-');
+    // GA4 returns dates as YYYYMMDD (no dashes)
+    const s = String(d.date);
+    const m   = s.slice(4, 6);
+    const day = s.slice(6, 8);
     return `${day}/${m}`;
   });
   const values = last90.map(d => d.sessions || 0);
