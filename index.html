@@ -6,6 +6,7 @@
 <title id="page-title">Unidad de inteligencia || nelly rent a car </title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://www.gstatic.com/charts/loader.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <link rel="shortcut icon" href="/favico.png" type="image/x-icon">
 
@@ -1380,11 +1381,11 @@ html,body{overflow-x:hidden;width:100%}
   <div class="card-title">Sesiones — Tendencia</div>
   <span id="ga4-chart-period-label" style="font-size:11px;color:var(--text3);font-weight:600">28 días</span>
   </div>
-  <div class="chart-wrap" style="height:200px"><canvas id="ga4SessionsChart"></canvas></div>
+  <div id="ga4-sessions-gc" style="width:100%;height:210px"></div>
   </div>
   <div class="card">
   <div class="card-title">Fuentes de Tráfico</div>
-  <div class="chart-wrap" style="height:200px"><canvas id="ga4ChannelsChart"></canvas></div>
+  <div id="ga4-channels-gc" style="width:100%;height:210px"></div>
   </div>
   </div>
 
@@ -1392,7 +1393,7 @@ html,body{overflow-x:hidden;width:100%}
   <div class="grid-2" style="margin-bottom:20px">
   <div class="card">
   <div class="card-title">Dispositivos</div>
-  <div id="ga4-devices-list" style="margin-top:4px"></div>
+  <div id="ga4-devices-list" style="margin-top:4px;min-height:120px"></div>
   </div>
   <div class="card">
   <div class="card-title">Top Países</div>
@@ -1403,7 +1404,7 @@ html,body{overflow-x:hidden;width:100%}
   <!-- Actividad diaria -->
   <div class="card" style="margin-bottom:20px">
   <div class="card-title" style="margin-bottom:12px">Actividad Diaria · Últimos 6 meses</div>
-  <div style="height:160px"><canvas id="ga4-heatmap-chart"></canvas></div>
+  <div id="ga4-heatmap-gc" style="width:100%;height:190px"></div>
   </div>
 
   <!-- Top Páginas -->
@@ -3272,17 +3273,211 @@ function renderSerpReviews(data) {
   hideLoadMore(); // all pages already loaded for each location
 }
 
-// GA4 chart state 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GA4 / ANALYTICS — Google Charts implementation
+// ═══════════════════════════════════════════════════════════════════════════════
 let GA4_DATA   = null;
-let GA4_PERIOD = '28d';   // active period
-let ga4SessionsChartInst = null;
+let GA4_PERIOD = '28d';
+let _gcReady   = false;
+let _gcReadyQ  = [];
 
-// ── Format helper (local scope) ───────────────────────────────────────────────
+google.charts.load('current', { packages: ['corechart', 'geochart'] });
+google.charts.setOnLoadCallback(() => {
+  _gcReady = true;
+  _gcReadyQ.forEach(fn => fn());
+  _gcReadyQ = [];
+});
+
+function _whenGCReady(fn) {
+  if (_gcReady) fn(); else _gcReadyQ.push(fn);
+}
+
+// ── Format helper ─────────────────────────────────────────────────────────────
 function _ga4Fmt(n) {
   if (n == null || isNaN(n)) return '—';
   return n >= 1000000 ? (n/1000000).toFixed(1)+'M'
        : n >= 1000    ? (n/1000).toFixed(1)+'K'
        : String(Math.round(n));
+}
+
+// Parse GA4 date YYYYMMDD → JS Date
+function _ga4Date(s) {
+  const t = String(s);
+  return new Date(+t.slice(0,4), +t.slice(4,6)-1, +t.slice(6,8));
+}
+
+// ── Sessions AreaChart (Google Charts) ───────────────────────────────────────
+function _gcRenderSessions(rows) {
+  const div = document.getElementById('ga4-sessions-gc');
+  if (!div) return;
+  if (!rows || !rows.length) {
+    div.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:30px 0;text-align:center">Sin datos de sesiones</div>';
+    return;
+  }
+  const data = new google.visualization.DataTable();
+  data.addColumn('date', 'Fecha');
+  data.addColumn('number', 'Sesiones');
+  data.addRows(rows.map(r => [_ga4Date(r.date), r.sessions || 0]));
+
+  new google.visualization.AreaChart(div).draw(data, {
+    chartArea: { left: 52, top: 14, right: 14, bottom: 38, width: '100%', height: '100%' },
+    colors: ['#F26722'],
+    areaOpacity: 0.13,
+    lineWidth: 2.5,
+    curveType: 'function',
+    pointSize: 0,
+    hAxis: {
+      format: 'dd/MM',
+      textStyle: { fontSize: 10, color: '#aaa' },
+      gridlines: { count: 0 },
+      baselineColor: 'transparent',
+    },
+    vAxis: {
+      textStyle: { fontSize: 10, color: '#aaa' },
+      gridlines: { color: '#f0f0f0', count: 4 },
+      baselineColor: '#e8e8e8',
+      minValue: 0,
+      format: 'short',
+    },
+    legend: { position: 'none' },
+    backgroundColor: 'transparent',
+    animation: { startup: true, duration: 700, easing: 'out' },
+  });
+}
+
+// ── Channels PieChart / Donut (Google Charts) ─────────────────────────────────
+function _gcRenderChannels(channels) {
+  const div = document.getElementById('ga4-channels-gc');
+  if (!div || !channels?.length) return;
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Canal');
+  data.addColumn('number', 'Sesiones');
+  data.addRows(channels.map(c => [c.channel, c.sessions]));
+
+  new google.visualization.PieChart(div).draw(data, {
+    pieHole: 0.44,
+    chartArea: { left: 8, top: 8, right: 8, bottom: 48, width: '100%', height: '100%' },
+    colors: ['#F26722','#3b82f6','#22c55e','#f59e0b','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2ecc71','#e67e22'],
+    legend: { position: 'bottom', textStyle: { fontSize: 10, color: '#666' }, maxLines: 2 },
+    pieSliceBorderColor: 'white',
+    pieSliceTextStyle: { fontSize: 11, bold: true },
+    backgroundColor: 'transparent',
+    tooltip: { showColorCode: true },
+    animation: { startup: true, duration: 700, easing: 'out' },
+  });
+}
+
+// ── Devices BarChart horizontal (Google Charts) ───────────────────────────────
+function _gcRenderDevices(devices) {
+  const div = document.getElementById('ga4-devices-list');
+  if (!div) return;
+  if (!devices?.length) {
+    div.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de dispositivos</div>';
+    return;
+  }
+  div.style.height = '130px';
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Dispositivo');
+  data.addColumn('number', 'Sesiones');
+  data.addColumn({ type: 'string', role: 'style' });
+  data.addColumn({ type: 'string', role: 'annotation' });
+  data.addRows(devices.map((d, i) => [
+    d.device,
+    d.sessions,
+    i === 0 ? 'color:#F26722;opacity:0.92' : `color:#F26722;opacity:${0.45 - i*0.05}`,
+    _ga4Fmt(d.sessions),
+  ]));
+
+  new google.visualization.BarChart(div).draw(data, {
+    chartArea: { left: 80, top: 6, right: 52, bottom: 6, width: '100%', height: '100%' },
+    legend: { position: 'none' },
+    hAxis: { textStyle: { fontSize: 9, color: '#bbb' }, gridlines: { color: '#f0f0f0' }, baselineColor: '#eee', minValue: 0, format: 'short' },
+    vAxis: { textStyle: { fontSize: 11, color: '#555', bold: false } },
+    annotations: { alwaysOutside: false, textStyle: { fontSize: 10, color: '#fff', bold: true } },
+    backgroundColor: 'transparent',
+    animation: { startup: true, duration: 600, easing: 'out' },
+  });
+}
+
+// ── GeoChart + ranked list — Países (Google Charts) ───────────────────────────
+function _gcRenderCountries(data) {
+  const div = document.getElementById('ga4-countries-list');
+  if (!div) return;
+  if (!data?.length) {
+    div.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de países</div>';
+    return;
+  }
+
+  const geoId = 'ga4-geo-inner-' + Date.now();
+  div.innerHTML = `<div id="${geoId}" style="width:100%;height:200px;margin-bottom:10px;border-radius:8px;overflow:hidden"></div>`;
+
+  const geoData = new google.visualization.DataTable();
+  geoData.addColumn('string', 'País');
+  geoData.addColumn('number', 'Sesiones');
+  geoData.addRows(data.map(d => [d.country, d.sessions]));
+
+  new google.visualization.GeoChart(document.getElementById(geoId)).draw(geoData, {
+    colorAxis: { colors: ['#fde8d8', '#F26722'] },
+    backgroundColor: { fill: '#f8f8f8', strokeWidth: 0 },
+    datalessRegionColor: '#ebebeb',
+    defaultColor: '#ebebeb',
+    legend: 'none',
+    tooltip: { isHtml: false },
+  });
+
+  // Ranked list below the map
+  const top10 = data.slice(0, 10);
+  const maxS  = top10[0]?.sessions || 1;
+  const fmt2  = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+  div.insertAdjacentHTML('beforeend', top10.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="width:14px;font-size:10px;color:var(--text3);text-align:right">${i+1}</span>
+      <span style="width:110px;font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.country}</span>
+      <div style="flex:1;background:var(--border);border-radius:4px;height:7px;overflow:hidden">
+        <div style="width:${Math.round(d.sessions/maxS*100)}%;background:var(--orange);height:100%;border-radius:4px;transition:width .5s"></div>
+      </div>
+      <span style="width:38px;text-align:right;font-size:11px;color:var(--text3)">${fmt2(d.sessions)}</span>
+    </div>`).join(''));
+}
+
+// ── Daily ColumnChart con intensidad de color (Google Charts) ─────────────────
+function _gcRenderHeatmap(dailyData) {
+  const div = document.getElementById('ga4-heatmap-gc');
+  if (!div) return;
+  if (!dailyData?.length) {
+    div.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:30px;text-align:center">Sin datos de actividad diaria</div>';
+    return;
+  }
+  const last90 = dailyData.slice(-90);
+  const maxV   = Math.max(...last90.map(d => d.sessions || 0), 1);
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('date', 'Fecha');
+  data.addColumn('number', 'Sesiones');
+  data.addColumn({ type: 'string', role: 'style' });
+  data.addColumn({ type: 'string', role: 'tooltip' });
+  data.addRows(last90.map(d => {
+    const pct   = (d.sessions || 0) / maxV;
+    const alpha = pct < 0.20 ? 0.18 : pct < 0.45 ? 0.42 : pct < 0.70 ? 0.68 : 0.92;
+    const dt    = _ga4Date(d.date);
+    return [
+      dt,
+      d.sessions || 0,
+      `color:rgba(242,103,34,${alpha});stroke-width:0`,
+      `${dt.getDate()}/${dt.getMonth()+1}: ${(d.sessions||0).toLocaleString()} sesiones`,
+    ];
+  }));
+
+  new google.visualization.ColumnChart(div).draw(data, {
+    chartArea: { left: 40, top: 10, right: 10, bottom: 40, width: '100%', height: '100%' },
+    legend: { position: 'none' },
+    hAxis: { format: 'dd/MM', textStyle: { fontSize: 9, color: '#aaa' }, gridlines: { count: 0 }, baselineColor: 'transparent' },
+    vAxis: { textStyle: { fontSize: 9, color: '#aaa' }, gridlines: { color: '#f0f0f0', count: 4 }, baselineColor: '#e8e8e8', minValue: 0, format: 'short' },
+    bar: { groupWidth: '90%' },
+    backgroundColor: 'transparent',
+    animation: { startup: true, duration: 600, easing: 'out' },
+    tooltip: { isHtml: false, trigger: 'focus' },
+  });
 }
 
 // ── Master period switch ──────────────────────────────────────────────────────
@@ -3292,23 +3487,16 @@ function ga4SetPeriod(period, btn) {
   if (btn) btn.classList.add('active');
   if (!GA4_DATA) return;
 
-  const periodRows = {
-    '7d':  GA4_DATA.daily7d  || [],
-    '28d': GA4_DATA.daily28d || [],
-    '6m':  GA4_DATA.daily6m  || [],
-  };
-  const rows = periodRows[period] || [];
+  const rows = { '7d': GA4_DATA.daily7d || [], '28d': GA4_DATA.daily28d || [], '6m': GA4_DATA.daily6m || [] }[period] || [];
   const S    = GA4_DATA.summary || {};
-
-  // ── KPIs: sessions + users from daily aggregation, fallback to summary ────
   const labels = { '7d': 'últimos 7 días', '28d': 'últimos 28 días', '6m': 'últimos 6 meses' };
-  let totalSessions, totalUsers;
+  const periodLabel = { '7d': '7 días', '28d': '28 días', '6m': '6 meses' };
 
+  let totalSessions, totalUsers;
   if (rows.length > 0) {
     totalSessions = rows.reduce((s, r) => s + (r.sessions || 0), 0);
     totalUsers    = rows.reduce((s, r) => s + (r.users    || 0), 0);
   } else {
-    // Daily data not available — fall back to summary (always 6m)
     totalSessions = S.sessions;
     totalUsers    = S.users;
   }
@@ -3319,138 +3507,60 @@ function ga4SetPeriod(period, btn) {
   const subEl2 = document.getElementById('ga4-sub-users');
   if (subEl1) subEl1.textContent = labels[period];
   if (subEl2) subEl2.textContent = labels[period];
-
-  // ── Chart ─────────────────────────────────────────────────────────────────
-  const periodLabel = { '7d': '7 días', '28d': '28 días', '6m': '6 meses' };
   const chartLabelEl = document.getElementById('ga4-chart-period-label');
   if (chartLabelEl) chartLabelEl.textContent = periodLabel[period];
 
-  if (ga4SessionsChartInst) {
-    ga4SessionsChartInst.data.labels   = rows.map(r => {
-      const d = r.date;
-      return period === '6m'
-        ? d.slice(5,7)+'/'+d.slice(8,10)   // MM/DD for 6m
-        : d.slice(5,7)+'/'+d.slice(8,10);  // same for all
-    });
-    ga4SessionsChartInst.data.datasets[0].data = rows.map(r => r.sessions);
-    ga4SessionsChartInst.update();
-  }
+  _whenGCReady(() => _gcRenderSessions(rows));
 }
 
-// Keep old function name as alias for the tour helper calls
 function ga4ChartPeriod(period, btn) { ga4SetPeriod(period, btn); }
 
+// ── Main GA4 render ───────────────────────────────────────────────────────────
 function renderGA4(G) {
   const notConf = document.getElementById('ga4-not-configured');
-  const badge = document.getElementById('ga4-badge');
   if (!G || !G.configured) {
-  if (notConf) notConf.style.display = 'block';
-  // Limpiar todos los divs de "Cargando…" para que no queden atascados
-  const _empty = (id, msg) => { const el = document.getElementById(id); if (el) el.innerHTML = `<div style="font-size:11px;color:var(--text3);padding:8px 0">${msg}</div>`; };
-  // ga4-heatmap-chart is a canvas — replace parent div content
-  const _heatWrap = document.getElementById('ga4-heatmap-chart')?.parentElement;
-  if (_heatWrap) _heatWrap.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0">Activa Google Analytics en Vercel para ver la actividad diaria.</div>';
-  _empty('ga4-devices-list', 'Sin datos — configura GA4_PROPERTY_ID en Vercel.');
-  _empty('ga4-countries-list','Sin datos — configura GA4_PROPERTY_ID en Vercel.');
-  const tbody = document.getElementById('ga4-pages-body');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Configura GA4_PROPERTY_ID en Vercel para ver las páginas.</td></tr>';
-  // Show actual error if available
-  if (G?.error) {
-  const titleEl = document.getElementById('ga4-error-title');
-  const detailEl = document.getElementById('ga4-error-detail');
-  if (titleEl) titleEl.textContent = 'Error al cargar Google Analytics';
-  if (detailEl) detailEl.innerHTML =
-  `<span style="color:var(--red)">${sanitizeText(G.error)}</span><br>
-  <span style="margin-top:4px;display:inline-block">Verifica que <strong style="color:var(--text2)">GA4_PROPERTY_ID</strong> y las credenciales de Google estén correctas en Vercel.</span>`;
-  }
-  return;
+    if (notConf) notConf.style.display = 'block';
+    const _empty = (id, msg) => { const e = document.getElementById(id); if (e) e.innerHTML = `<div style="font-size:11px;color:var(--text3);padding:8px 0">${msg}</div>`; };
+    _empty('ga4-devices-list',  'Sin datos — configura GA4_PROPERTY_ID en Vercel.');
+    _empty('ga4-countries-list','Sin datos — configura GA4_PROPERTY_ID en Vercel.');
+    const heatDiv = document.getElementById('ga4-heatmap-gc');
+    if (heatDiv) heatDiv.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0">Activa Google Analytics en Vercel para ver la actividad diaria.</div>';
+    const tbody = document.getElementById('ga4-pages-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Configura GA4_PROPERTY_ID en Vercel para ver las páginas.</td></tr>';
+    if (G?.error) {
+      const titleEl  = document.getElementById('ga4-error-title');
+      const detailEl = document.getElementById('ga4-error-detail');
+      if (titleEl)  titleEl.textContent = 'Error al cargar Google Analytics';
+      if (detailEl) detailEl.innerHTML  = `<span style="color:var(--red)">${sanitizeText(G.error)}</span><br><span style="margin-top:4px;display:inline-block">Verifica que <strong style="color:var(--text2)">GA4_PROPERTY_ID</strong> y las credenciales de Google estén correctas en Vercel.</span>`;
+    }
+    return;
   }
   if (notConf) notConf.style.display = 'none';
-  // ga4-badge hidden by design
-
   GA4_DATA = G;
-  console.log('[GA4] renderGA4 — datos recibidos:', JSON.stringify(G).slice(0, 400));
-  const S = G.summary || {};
+  console.log('[GA4] renderGA4 — datos recibidos:', JSON.stringify(G).slice(0, 300));
 
-  // Fill ALL KPIs immediately from summary (reliable 6m data)
+  const S = G.summary || {};
   el('ga4-kpi-sessions',   _ga4Fmt(S.sessions));
   el('ga4-kpi-users',      _ga4Fmt(S.users));
   el('ga4-kpi-newusers',   _ga4Fmt(S.newUsers));
   el('ga4-kpi-engagement', (S.engagementRate || 0) + '%');
   el('ga4-kpi-pageviews',  _ga4Fmt(S.pageViews));
-  // Mark period labels as 6m (will update when user changes filter)
   const subEl1 = document.getElementById('ga4-sub-sessions');
   const subEl2 = document.getElementById('ga4-sub-users');
   if (subEl1) subEl1.textContent = 'últimos 6 meses';
   if (subEl2) subEl2.textContent = 'últimos 6 meses';
 
-  // Show filter bar
   const filterBar = document.getElementById('ga4-filter-bar');
   if (filterBar) filterBar.style.display = 'flex';
 
-  // Build sessions chart with default period (28d)
-  const rows28d = G.daily28d || [];
-  ga4SessionsChartInst = mkChart('ga4SessionsChart', {
-  type: 'line',
-  data: {
-  labels: rows28d.map(r => r.date.slice(5,7)+'/'+r.date.slice(8,10)),
-  datasets: [{
-  label: 'Sesiones', data: rows28d.map(r => r.sessions),
-  borderColor: '#F26722', backgroundColor: 'rgba(242,103,34,0.08)',
-  borderWidth: 2, fill: true, tension: 0.4, pointRadius: 2,
-  pointHoverRadius: 5, pointHoverBackgroundColor: '#F26722',
-  }],
-  },
-  options: {
-  responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { display: false },
-    tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString('es-DO') + ' sesiones' } } },
-  scales: {
-  x: { ticks: { font: { size: 10 }, color: MU, maxTicksLimit: 12 }, grid: { display: false } },
-  y: { ticks: { font: { size: 10 }, color: MU }, grid: { color: 'rgba(0,0,0,0.04)' } },
-  },
-  },
-  });
-
-  // Apply default period — only updates chart, KPIs already set from summary above
+  // Apply default period (updates KPIs + sessions chart)
   ga4SetPeriod('28d', document.getElementById('ga4-tab-28d'));
 
-  // Channels donut
-  const channels = G.channels || [];
-  const chColors = [O, BL, GR, OL, '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#2ecc71', '#e67e22'];
-  mkChart('ga4ChannelsChart', {
-  type: 'doughnut',
-  data: {
-  labels: channels.map(c => c.channel),
-  datasets: [{ data: channels.map(c => c.sessions), backgroundColor: chColors, borderWidth: 0, cutout: '55%' }],
-  },
-  options: {
-  responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: MU, padding: 10, boxWidth: 10 } } },
-  },
+  // Channels + Devices (no need to wait for page to be active)
+  _whenGCReady(() => {
+    _gcRenderChannels(G.channels || []);
+    _gcRenderDevices(G.devices   || []);
   });
-
-  // Devices bar rows
-  try {
-    const devices = G.devices || [];
-    const devContainer = document.getElementById('ga4-devices-list');
-    if (devContainer) {
-      if (devices.length) {
-        const maxDev = Math.max(...devices.map(d => d.sessions), 1);
-        devContainer.innerHTML = devices.map(d => `
-          <div class="ga4-bar-row">
-            <div class="ga4-bar-label">${d.device}</div>
-            <div class="ga4-bar-track"><div class="ga4-bar-fill" style="width:${Math.round(d.sessions/maxDev*100)}%"></div></div>
-            <div class="ga4-bar-val">${_ga4Fmt(d.sessions)}</div>
-          </div>`).join('');
-      } else {
-        devContainer.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de dispositivos</div>';
-      }
-    }
-  } catch(e) {
-    console.error('[GA4 Devices]', e);
-    _showChartError('ga4-devices-list', e, 'Dispositivos');
-  }
 
   // Top pages table
   try {
@@ -3466,9 +3576,9 @@ function renderGA4(G) {
           <td style="padding:8px 6px;text-align:right;font-weight:600">${_ga4Fmt(p.pageViews)}</td>
           <td style="padding:8px 6px;text-align:right">${_ga4Fmt(p.sessions)}</td>
           <td style="padding:8px 6px;text-align:right;color:var(--text2)">${dur}</td>
-          <td style="padding:8px 6px;text-align:right;color:${p.engagementRate>=50?GR:'var(--text2)'}">${p.engagementRate}%</td>
+          <td style="padding:8px 6px;text-align:right;color:${p.engagementRate>=50?'#22c55e':'var(--text2)'}">${p.engagementRate}%</td>
         </tr>`;
-      }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Sin datos — verifica que GA4_PROPERTY_ID esté configurado correctamente en Vercel</td></tr>';
+      }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Sin datos — verifica GA4_PROPERTY_ID en Vercel</td></tr>';
     }
   } catch(e) {
     console.error('[GA4 Pages]', e);
@@ -3476,158 +3586,31 @@ function renderGA4(G) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="padding:12px;color:#c0392b">⚠️ Error páginas: ${e?.message || e}</td></tr>`;
   }
 
-  // Chart.js charts (países + actividad diaria)
   window._ga4FullData = G;
   _renderGA4D3Charts(G);
 }
 
-// Helper: muestra error visible en un contenedor del DOM
+// Helper: muestra error visible
 function _showChartError(id, err, label) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = `<div style="font-size:11px;color:#c0392b;background:#fdf0ef;border:1px solid #f5c6c2;border-radius:6px;padding:8px 10px;margin-top:4px">
-    ⚠️ <strong>${label}</strong>: ${err?.message || String(err)}
-  </div>`;
+  const e = document.getElementById(id);
+  if (!e) return;
+  e.innerHTML = `<div style="font-size:11px;color:#c0392b;background:#fdf0ef;border:1px solid #f5c6c2;border-radius:6px;padding:8px 10px;margin-top:4px">⚠️ <strong>${label}</strong>: ${err?.message || String(err)}</div>`;
 }
 
-// Render Chart.js analytics charts (llamado al cargar datos Y cuando se abre la pestaña Analytics)
+// Render Google Charts que necesitan el ancho real (llamado al abrir la pestaña)
 function _renderGA4D3Charts(G) {
   if (!G) return;
   const analyticsPage = document.getElementById('page-analytics');
-  if (!analyticsPage?.classList.contains('active')) {
-    window._ga4FullData = G;
-    return;
-  }
-  console.log('[GA4 Charts] _renderGA4D3Charts — datos:', G);
-  try {
-    renderD3Countries((G.countries || []).slice(0, 20));
-  } catch(e) {
-    console.error('[GA4 Countries]', e);
-    _showChartError('ga4-countries-list', e, 'Países');
-  }
-  try {
-    renderD3Heatmap(G.daily6m || []);
-  } catch(e) {
-    console.error('[GA4 Heatmap]', e);
-    const wrap = document.getElementById('ga4-heatmap-chart')?.parentElement;
-    if (wrap) wrap.innerHTML = `<div style="font-size:11px;color:#c0392b;background:#fdf0ef;border:1px solid #f5c6c2;border-radius:6px;padding:8px 10px">⚠️ <strong>Actividad diaria</strong>: ${e?.message || e}</div>`;
-  }
-}
-
-// ── Chart.js — Top Países (barras horizontales) ───────────────────────────────
-function renderD3Countries(data) {
-  const container = document.getElementById('ga4-countries-list');
-  if (!container) return;
-  if (!data || !data.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">Sin datos de países</div>';
-    return;
-  }
-
-  const top10 = data.slice(0, 10);
-  const fmt2  = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
-  const maxS  = top10[0]?.sessions || 1;
-
-  container.innerHTML = top10.map((d, i) => `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-      <span style="width:14px;font-size:10px;color:var(--text3);text-align:right">${i+1}</span>
-      <span style="width:120px;font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.country}</span>
-      <div style="flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden">
-        <div style="width:${Math.round(d.sessions/maxS*100)}%;background:var(--orange);height:100%;border-radius:4px;transition:width .4s"></div>
-      </div>
-      <span style="width:36px;text-align:right;font-size:11px;color:var(--text3)">${fmt2(d.sessions)}</span>
-    </div>`).join('');
-}
-
-// ── Actividad diaria — Chart.js bar chart (últimos 90 días) ───────────────────
-function renderD3Heatmap(dailyData) {
-  const canvas = document.getElementById('ga4-heatmap-chart');
-  if (!canvas) return;
-
-  if (!dailyData || !dailyData.length) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const parent = canvas.parentElement;
-    if (parent) {
-      parent.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:20px 0;text-align:center">Sin datos de actividad diaria</div>';
-    }
-    return;
-  }
-
-  // Last 90 days (or all if fewer)
-  const last90 = dailyData.slice(-90);
-
-  // Group by week label for readability when many days
-  const labels = last90.map(d => {
-    if (!d.date) return '';
-    // GA4 returns dates as YYYYMMDD (no dashes)
-    const s = String(d.date);
-    const m   = s.slice(4, 6);
-    const day = s.slice(6, 8);
-    return `${day}/${m}`;
-  });
-  const values = last90.map(d => d.sessions || 0);
-  const maxV   = Math.max(...values, 1);
-
-  // Color each bar by intensity (light → orange)
-  const bgColors = values.map(v => {
-    const pct = v / maxV;
-    if (pct < 0.2)  return 'rgba(232,97,10,0.15)';
-    if (pct < 0.45) return 'rgba(232,97,10,0.38)';
-    if (pct < 0.70) return 'rgba(232,97,10,0.62)';
-    return 'rgba(232,97,10,0.90)';
-  });
-
-  // Only show every Nth label to avoid overlap
-  const step = Math.ceil(last90.length / 20);
-  const displayLabels = labels.map((l, i) => (i % step === 0 ? l : ''));
-
-  if (charts['ga4-heatmap-chart']) {
-    try { charts['ga4-heatmap-chart'].destroy(); } catch(_) {}
-  }
-  charts['ga4-heatmap-chart'] = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: displayLabels,
-      datasets: [{
-        label: 'Sesiones',
-        data: values,
-        backgroundColor: bgColors,
-        borderRadius: 2,
-        borderSkipped: 'bottom',
-        barPercentage: 0.9,
-        categoryPercentage: 0.95,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 400 },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: (items) => {
-              const idx = items[0].dataIndex;
-              return last90[idx]?.date || '';
-            },
-            label: (item) => ` ${item.raw} sesiones`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { font: { size: 9 }, color: '#aaa', maxRotation: 0 },
-          border: { display: false },
-        },
-        y: {
-          grid: { color: 'rgba(0,0,0,0.05)' },
-          ticks: { font: { size: 9 }, color: '#aaa', maxTicksLimit: 4 },
-          border: { display: false },
-          beginAtZero: true,
-        },
-      },
-    },
+  if (!analyticsPage?.classList.contains('active')) { window._ga4FullData = G; return; }
+  _whenGCReady(() => {
+    try { _gcRenderCountries((G.countries || []).slice(0, 20)); }
+    catch(e) { console.error('[GA4 Countries]', e); _showChartError('ga4-countries-list', e, 'Países'); }
+    try { _gcRenderHeatmap(G.daily6m || []); }
+    catch(e) { console.error('[GA4 Heatmap]', e); const d = document.getElementById('ga4-heatmap-gc'); if (d) d.innerHTML = `<div style="font-size:11px;color:#c0392b;background:#fdf0ef;border:1px solid #f5c6c2;border-radius:6px;padding:8px 10px">⚠️ Actividad diaria: ${e?.message || e}</div>`; }
+    // Re-render sessions/channels/devices too (need real width when tab opens)
+    if (G.daily28d) _gcRenderSessions({ '7d': G.daily7d || [], '28d': G.daily28d || [], '6m': G.daily6m || [] }[GA4_PERIOD] || G.daily28d);
+    _gcRenderChannels(G.channels || []);
+    _gcRenderDevices(G.devices   || []);
   });
 }
 
@@ -4782,8 +4765,8 @@ const TOURS = {
     { element: '#page-analytics .kpi-grid', popover: { title: 'KPIs de Google Analytics 4', description: 'Sesiones y Usuarios cambian según el período seleccionado. Nuevos Usuarios, Engagement Rate y Páginas Vistas siempre muestran los últimos 6 meses (GA4 no provee esos datos por día individual).', side: 'bottom' }},
     { element: '#ga4-kpi-sessions', popover: { title: 'Sesiones del Período', description: 'Una sesión es una visita continua a tu sitio. Este número cambia cuando cambias el filtro de período. Compara la semana reciente con el mes anterior para detectar si hay crecimiento o caída.', side: 'bottom' }},
     { element: '#ga4-kpi-engagement', popover: { title: 'Engagement Rate', description: 'Porcentaje de sesiones donde el usuario interactuó activamente — pasó más de 10 segundos, vio más de una página o realizó una acción. Un rate mayor al 50% indica que el contenido es relevante para tu audiencia.', side: 'bottom' }},
-    { element: '#ga4SessionsChart', popover: { title: 'Tendencia de Sesiones', description: 'Gráfica diaria del período activo. Busca picos que coincidan con campañas de redes sociales o fechas festivas, y caídas que puedan indicar problemas técnicos o cambios en el algoritmo de Google.', side: 'top' }},
-    { element: '#ga4ChannelsChart', popover: { title: 'Fuentes de Tráfico', description: 'Cómo llega la gente a tu sitio: Organic Search (Google/Bing gratis), Direct (URL directa o app), Referral (otro sitio), Paid (anuncios), Social (redes sociales). Si Organic es tu canal principal, el SEO está funcionando.', side: 'top' }},
+    { element: '#ga4-sessions-gc', popover: { title: 'Tendencia de Sesiones', description: 'Gráfica diaria del período activo. Busca picos que coincidan con campañas de redes sociales o fechas festivas, y caídas que puedan indicar problemas técnicos o cambios en el algoritmo de Google.', side: 'top' }},
+    { element: '#ga4-channels-gc', popover: { title: 'Fuentes de Tráfico', description: 'Cómo llega la gente a tu sitio: Organic Search (Google/Bing gratis), Direct (URL directa o app), Referral (otro sitio), Paid (anuncios), Social (redes sociales). Si Organic es tu canal principal, el SEO está funcionando.', side: 'top' }},
     { element: '#ga4-devices-list', popover: { title: 'Dispositivos', description: 'Proporción de visitas desde móvil, tablet y escritorio. Si más del 65% es móvil, asegúrate de que nellyrac.do tenga una experiencia mobile excelente — Google rankea primero por la versión móvil.', side: 'top' }},
     { element: '#ga4-pages-body', popover: { title: 'Páginas Más Visitadas', description: 'Las URLs con más vistas, sesiones y tiempo promedio. Una página con muchas vistas pero tiempo corto puede necesitar mejor contenido. Un engagement rate bajo en la página de reservas es una señal de alarma.', side: 'top' }},
   ],
