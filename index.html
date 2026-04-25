@@ -2201,14 +2201,21 @@ function applyStoredConfig() {
   const sb = document.getElementById('sidebar-status');
   if (sb) sb.innerHTML = `<strong>${name}</strong> nellyrac.do`;
   try {
-  const svg = document.querySelector('.logo-wrap svg');
-  if (svg) {
-  const img = document.createElement('img');
-  img.src = `https://www.google.com/s2/favicons?domain=nellyrac.do&sz=64`;
-  img.style.cssText = 'width:32px;height:32px;border-radius:6px;object-fit:contain';
-  img.onerror = () => img.remove();
-  svg.replaceWith(img);
-  }
+    const logoWrap = document.querySelector('.logo-wrap');
+    if (logoWrap) {
+      const img = document.createElement('img');
+      img.src = `https://www.google.com/s2/favicons?domain=nellyrac.do&sz=64`;
+      img.style.cssText = 'width:32px;height:32px;border-radius:6px;object-fit:contain;flex-shrink:0';
+      img.onerror = () => img.remove(); // si falla, deja el SVG intacto
+      // Insertar delante del SVG existente (si ya hay img previa, no duplicar)
+      const existingImg = logoWrap.querySelector('img');
+      const svg = logoWrap.querySelector('svg');
+      if (!existingImg && svg) {
+        svg.replaceWith(img);
+      } else if (!existingImg) {
+        logoWrap.prepend(img);
+      }
+    }
   } catch {}
 }
 
@@ -2709,9 +2716,16 @@ function showPage(name, el) {
     _loadGmbSection();
   }
 
-  // Re-render Google Charts cuando se abre la pestaña Analytics (el mapa necesita ancho real)
+  // Re-render Google Charts cuando se abre Analytics (el mapa necesita ancho real)
   if (name === 'analytics' && window._ga4FullData) {
     setTimeout(() => _renderGA4D3Charts(window._ga4FullData), 80);
+  }
+
+  // Re-render Forecast charts al abrir la pestaña (los divs estaban ocultos al cargar)
+  if (name === 'forecast' && window._dashData && window._dashData.chart) {
+    setTimeout(() => {
+      try { renderForecast(window._dashData); } catch(e) { console.error('[renderForecast re-render]', e); }
+    }, 100);
   }
 }
 
@@ -3589,6 +3603,11 @@ function renderForecast(D) {
   fillKpi('fc-kpi-90d','fc-sub-90d', p90, clicks90hist);
 
   // ── 6. Google Charts — main chart + monthly bar ──────────────────
+  // Solo dibujamos los charts si la página está visible (para evitar render en 0×0px)
+  const fcPageVisible = document.getElementById('page-forecast') &&
+                        document.getElementById('page-forecast').classList.contains('active');
+  if (!fcPageVisible) return; // Los charts se renderizan en showPage al abrir la pestaña
+
   _whenGCReady(function() {
 
     // ── Main chart: LineChart con intervalos para CI band ─────────
