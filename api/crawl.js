@@ -1,18 +1,18 @@
 /**
  * api/crawl.js
- * GET /api/crawl
+ * GET /api/crawl?site=https://tudominio.com
  *
- * Reads sitemaps from nellyrac.do, checks each URL and returns:
- * status code, redirect destination, response time, page title.
+ * Reads sitemaps from the user's configured site, checks each URL and returns:
+ * status code, redirect destination, response time, page title, meta tags.
+ *
+ * Sitemap discovery order:
+ *   /sitemap.xml → /sitemap_index.xml → /page-sitemap.xml + /post-sitemap.xml
+ * Falls back to crawling just the homepage if no sitemap is found.
  */
-
-const SITEMAPS = [
-  'https://nellyrac.do/page-sitemap.xml',
-  'https://nellyrac.do/post-sitemap.xml',
-];
 
 const TIMEOUT_MS  = 10000;
 const CONCURRENCY = 5;
+const MAX_URLS    = 50; // safety cap per crawl
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -20,25 +20,35 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Use GET' });
 
+  // ── Resolve site origin ──────────────────────────────────────────────────────
+  const raw = req.query.site || '';
+  let origin = '';
   try {
-    // 1. Fetch and parse all sitemaps
-    const urls = await getAllUrls();
+    const u = new URL(raw.startsWith('http') ? raw : 'https://' + raw);
+    origin = u.origin; // e.g. "https://dualsym.com"
+  } catch {
+    return res.status(400).json({ error: 'Parámetro "site" inválido o ausente. Configura tu sitio en el dashboard.' });
+  }
+
+  try {
+    // 1. Discover + fetch sitemaps
+    const urls = await getAllUrls(origin);
 
     // 2. Check each URL in batches
-    const results = await checkUrlsBatch(urls, CONCURRENCY);
+    const results = await checkUrlsBatch(urls.slice(0, MAX_URLS), CONCURRENCY);
 
     // 3. Build summary
     const ok200 = results.filter(r => r.status === 200);
     const summary = {
-      total:      results.length,
-      ok:         ok200.length,
-      redirects:  results.filter(r => r.status >= 300 && r.status < 400).length,
-      notFound:   results.filter(r => r.status === 404).length,
-      errors:     results.filter(r => r.status >= 400 && r.status !== 404).length,
-      slow:       results.filter(r => r.ms > 2000).length,
-      noDesc:     ok200.filter(r => !r.meta?.description).length,
-      noH1:       ok200.filter(r => !r.meta?.h1).length,
-      noCanonical:ok200.filter(r => !r.meta?.canonical).length,
+      total:       results.length,
+      ok:          ok200.length,
+      redirects:   results.filter(r => r.status >= 300 && r.status < 400).length,
+      notFound:    results.filter(r => r.status === 404).length,
+      errors:      results.filter(r => r.status >= 400 && r.status !== 404).length,
+      slow:        results.filter(r => r.ms > 2000).length,
+      noDesc:      ok200.filter(r => !r.meta?.description).length,
+      noH1:        ok200.filter(r => !r.meta?.h1).length,
+      noCanonical: ok200.filter(r => !r.meta?.canonical).length,
     };
 
     // Sort: errors first, then redirects, then slow, then ok
@@ -60,22 +70,55 @@ module.exports = async function handler(req, res) {
   }
 };
 
-// ── Fetch and parse sitemaps ──────────────────────────────────────────────────
-async function getAllUrls() {
+// ── Sitemap discovery ─────────────────────────────────────────────────────────
+async function getAllUrls(origin) {
+  // Try sitemaps in order of likelihood
+  const candidates = [
+    `${origin}/sitemap.xml`,
+    `${origin}/sitemap_index.xml`,
+    `${origin}/page-sitemap.xml`,
+    `${origin}/post-sitemap.xml`,
+    `${origin}/product-sitemap.xml`,
+  ];
+
   const all = [];
-  for (const sitemapUrl of SITEMAPS) {
+
+  for (const sitemapUrl of candidates) {
     try {
       const r = await fetchWithTimeout(sitemapUrl, TIMEOUT_MS);
       if (!r.ok) continue;
       const xml = await r.text();
-      const matches = [...xml.matchAll(/<loc>\s*(https?:\/\/[^<]+?)\s*<\/loc>/g)];
-      matches.forEach(m => {
-        const url = m[1].trim();
-        if (!all.includes(url)) all.push(url);
-      });
+
+      // A sitemap index references other sitemaps via <sitemap><loc>…
+      const sitemapRefs = [...xml.matchAll(/<sitemap>\s*<loc>\s*(https?:\/\/[^<]+?)\s*<\/loc>/gi)];
+      if (sitemapRefs.length > 0) {
+        // It's a sitemap index — fetch each child sitemap
+        for (const ref of sitemapRefs.slice(0, 6)) {
+          try {
+            const r2 = await fetchWithTimeout(ref[1].trim(), TIMEOUT_MS);
+            if (!r2.ok) continue;
+            const xml2 = await r2.text();
+            extractLocs(xml2).forEach(u => { if (!all.includes(u)) all.push(u); });
+          } catch {}
+        }
+      } else {
+        // Regular sitemap
+        extractLocs(xml).forEach(u => { if (!all.includes(u)) all.push(u); });
+      }
+
+      if (all.length > 0) break; // found URLs, stop trying candidates
     } catch {}
   }
+
+  // Fallback: crawl just the homepage
+  if (all.length === 0) all.push(origin + '/');
+
   return all;
+}
+
+function extractLocs(xml) {
+  return [...xml.matchAll(/<loc>\s*(https?:\/\/[^<]+?)\s*<\/loc>/g)]
+    .map(m => m[1].trim());
 }
 
 // ── Check URLs in batches ─────────────────────────────────────────────────────
@@ -96,7 +139,7 @@ async function checkUrl(url) {
       method: 'GET',
       redirect: 'manual',
       headers: {
-        'User-Agent': 'NellyDashboard-Crawler/1.0',
+        'User-Agent': 'GrowthDashboard-Crawler/2.0',
         'Accept': 'text/html',
       },
     });
@@ -128,7 +171,7 @@ async function checkUrl(url) {
     return {
       url, status: 0, ms: Date.now() - start,
       location: null, title: null,
-      error: err.message.includes('timeout') ? 'Timeout' : 'Error de conexión',
+      error: err.message.includes('timeout') || err.message.includes('abort') ? 'Timeout' : 'Error de conexión',
     };
   }
 }

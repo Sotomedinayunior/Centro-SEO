@@ -1,17 +1,16 @@
 /**
  * api/pagespeed.js
- * GET /api/pagespeed?strategy=mobile|desktop
+ * GET /api/pagespeed?strategy=mobile|desktop&site=https://tudominio.com
  *
- * Runs Google PageSpeed Insights on all sitemap pages.
+ * Runs Google PageSpeed Insights on all sitemap pages of the user's site.
  * No API key required (uses public endpoint, rate limited to 25k/day).
+ *
+ * Sitemap discovery mirrors api/crawl.js logic.
  */
 
-const SITEMAPS = [
-  'https://nellyrac.do/page-sitemap.xml',
-  'https://nellyrac.do/post-sitemap.xml',
-];
 const CONCURRENCY = 3;
 const TIMEOUT_MS  = 25000;
+const MAX_URLS    = 20; // PSI is slow — cap to avoid Vercel timeout
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -19,20 +18,31 @@ module.exports = async function handler(req, res) {
 
   const strategy = req.query.strategy === 'desktop' ? 'desktop' : 'mobile';
 
+  // ── Resolve site origin ────────────────────────────────────────────────────
+  const raw = req.query.site || '';
+  let origin = '';
   try {
-    const urls = await getAllUrls();
-    if (!urls.length) return res.status(200).json({ ok: false, error: 'No URLs found in sitemaps' });
+    const u = new URL(raw.startsWith('http') ? raw : 'https://' + raw);
+    origin = u.origin;
+  } catch {
+    return res.status(400).json({ ok: false, error: 'Parámetro "site" inválido o ausente. Configura tu sitio en el dashboard.' });
+  }
 
-    const results = await checkBatch(urls, strategy, CONCURRENCY);
+  try {
+    const urls = await getAllUrls(origin);
+    if (!urls.length) return res.status(200).json({ ok: false, error: 'No se encontraron URLs en el sitemap.' });
 
+    const results = await checkBatch(urls.slice(0, MAX_URLS), strategy, CONCURRENCY);
+
+    const scored = results.filter(r => r.score !== null);
     const summary = {
-      total:   results.length,
-      good:    results.filter(r => r.score >= 90).length,
+      total:     results.length,
+      good:      results.filter(r => r.score >= 90).length,
       needsWork: results.filter(r => r.score >= 50 && r.score < 90).length,
-      poor:    results.filter(r => r.score < 50 && r.score !== null).length,
-      failed:  results.filter(r => r.score === null).length,
-      avgScore: results.filter(r => r.score !== null).length
-        ? Math.round(results.filter(r => r.score !== null).reduce((s, r) => s + r.score, 0) / results.filter(r => r.score !== null).length)
+      poor:      results.filter(r => r.score !== null && r.score < 50).length,
+      failed:    results.filter(r => r.score === null).length,
+      avgScore:  scored.length
+        ? Math.round(scored.reduce((s, r) => s + r.score, 0) / scored.length)
         : null,
     };
 
@@ -45,20 +55,52 @@ module.exports = async function handler(req, res) {
   }
 };
 
-async function getAllUrls() {
+// ── Sitemap discovery (mirrors crawl.js) ─────────────────────────────────────
+async function getAllUrls(origin) {
+  const candidates = [
+    `${origin}/sitemap.xml`,
+    `${origin}/sitemap_index.xml`,
+    `${origin}/page-sitemap.xml`,
+    `${origin}/post-sitemap.xml`,
+    `${origin}/product-sitemap.xml`,
+  ];
+
   const all = [];
-  for (const sitemapUrl of SITEMAPS) {
+
+  for (const sitemapUrl of candidates) {
     try {
       const r = await fetchWithTimeout(sitemapUrl, 8000);
       if (!r.ok) continue;
       const xml = await r.text();
-      const matches = [...xml.matchAll(/<loc>\s*(https?:\/\/[^<]+?)\s*<\/loc>/g)];
-      matches.forEach(m => { const u = m[1].trim(); if (!all.includes(u)) all.push(u); });
+
+      // Sitemap index?
+      const sitemapRefs = [...xml.matchAll(/<sitemap>\s*<loc>\s*(https?:\/\/[^<]+?)\s*<\/loc>/gi)];
+      if (sitemapRefs.length > 0) {
+        for (const ref of sitemapRefs.slice(0, 4)) {
+          try {
+            const r2 = await fetchWithTimeout(ref[1].trim(), 8000);
+            if (!r2.ok) continue;
+            extractLocs(await r2.text()).forEach(u => { if (!all.includes(u)) all.push(u); });
+          } catch {}
+        }
+      } else {
+        extractLocs(xml).forEach(u => { if (!all.includes(u)) all.push(u); });
+      }
+
+      if (all.length > 0) break;
     } catch {}
   }
+
+  if (all.length === 0) all.push(origin + '/');
   return all;
 }
 
+function extractLocs(xml) {
+  return [...xml.matchAll(/<loc>\s*(https?:\/\/[^<]+?)\s*<\/loc>/g)]
+    .map(m => m[1].trim());
+}
+
+// ── PSI check ─────────────────────────────────────────────────────────────────
 async function checkBatch(urls, strategy, concurrency) {
   const results = [];
   for (let i = 0; i < urls.length; i += concurrency) {
@@ -73,10 +115,10 @@ async function checkPage(url, strategy) {
   const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&category=performance`;
   try {
     const r = await fetchWithTimeout(apiUrl, TIMEOUT_MS);
-    if (!r.ok) return { url, score: null, error: `HTTP ${r.status}`, cwv: null };
+    if (!r.ok) return { url, score: null, error: `HTTP ${r.status}`, cwv: null, opportunities: [] };
     const data = await r.json();
 
-    const cats  = data.lighthouseResult?.categories || {};
+    const cats   = data.lighthouseResult?.categories || {};
     const audits = data.lighthouseResult?.audits || {};
 
     const score = cats.performance?.score != null ? Math.round(cats.performance.score * 100) : null;
@@ -106,9 +148,9 @@ function getMetric(audits, key) {
   const a = audits[key];
   if (!a) return null;
   return {
-    value:       a.numericValue != null ? +a.numericValue.toFixed(2) : null,
+    value:        a.numericValue != null ? +a.numericValue.toFixed(2) : null,
     displayValue: a.displayValue || null,
-    score:       a.score != null ? Math.round(a.score * 100) : null,
+    score:        a.score != null ? Math.round(a.score * 100) : null,
   };
 }
 

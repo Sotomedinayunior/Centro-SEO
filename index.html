@@ -4847,12 +4847,14 @@ async function runAudit() {
   btn.disabled = true;
   btn.textContent = '⏳ Rastreando…';
   status.style.display = 'block';
-  status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⏳</div><div style="font-size:15px;font-weight:600;color:var(--text)">Rastreando 18 páginas…</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Puede tomar 10-20 segundos</div>`;
+  const auditSite = SITE_CONFIG.siteUrl || '';
+  status.innerHTML = `<div style="font-size:28px;margin-bottom:12px">⏳</div><div style="font-size:15px;font-weight:600;color:var(--text)">Rastreando ${auditSite ? new URL(auditSite).hostname : 'el sitio'}…</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Puede tomar 10-20 segundos</div>`;
   filters.style.display = 'none';
   results.style.display = 'none';
 
   try {
-  const r = await fetch('/api/crawl');
+  if (!auditSite) throw new Error('Configura la URL de tu sitio en el dashboard primero.');
+  const r = await fetch('/api/crawl?site=' + encodeURIComponent(auditSite));
   if (!r.ok) throw new Error('Error del servidor');
   const data = await r.json();
   if (!data.ok) throw new Error(data.error || 'Error desconocido');
@@ -5526,7 +5528,9 @@ async function runPagespeed() {
   res.style.display = 'none';
 
   try {
-  const r = await fetch(`/api/pagespeed?strategy=${psStrategy}`);
+  const psSite = SITE_CONFIG.siteUrl || '';
+  if (!psSite) throw new Error('Configura la URL de tu sitio en el dashboard primero.');
+  const r = await fetch(`/api/pagespeed?strategy=${psStrategy}&site=${encodeURIComponent(psSite)}`);
   if (!r.ok) throw new Error('Error del servidor');
   const data = await r.json();
   if (!data.ok) throw new Error(data.error || 'Error desconocido');
@@ -5690,7 +5694,9 @@ async function runOnPage() {
   res.style.display = 'none';
 
   try {
-  const r = await fetch('/api/crawl');
+  const onpageSite = SITE_CONFIG.siteUrl || '';
+  if (!onpageSite) throw new Error('Configura la URL de tu sitio en el dashboard primero.');
+  const r = await fetch('/api/crawl?site=' + encodeURIComponent(onpageSite));
   if (!r.ok) throw new Error('Error del servidor');
   const data = await r.json();
   if (!data.ok) throw new Error(data.error || 'Error desconocido');
