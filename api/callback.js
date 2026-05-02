@@ -2,10 +2,16 @@
  * api/callback.js
  * GET /api/callback?code=...&state=...
  *
- * Exchanges the OAuth code for tokens, then returns an HTML page
- * that saves the refresh_token in localStorage and redirects to the dashboard.
+ * Exchanges the OAuth code for tokens, stores the refresh_token in an
+ * httpOnly cookie (never exposed to JS), and redirects to the dashboard.
+ *
+ * SaaS flow: GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET are the platform's
+ * OAuth credentials (env vars). Per-user tokens live in the secure cookie.
  */
 const { google } = require('googleapis');
+
+// Cookie name used across all api/* handlers
+const COOKIE_NAME = 'g_session';
 
 module.exports = async function handler(req, res) {
   const { code, error, state } = req.query;
@@ -23,6 +29,7 @@ module.exports = async function handler(req, res) {
   const host        = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
   const protocol    = host.includes('localhost') ? 'http' : 'https';
   const redirectUri = `${protocol}://${host}/api/callback`;
+  const isSecure    = protocol === 'https';
 
   const auth = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -41,47 +48,31 @@ module.exports = async function handler(req, res) {
       ));
     }
 
-    // Decode site URL from state
+    // Decode site URL from state (passed by /api/auth, stored in localStorage by frontend)
     let siteUrl = '';
     try {
       const stateObj = JSON.parse(Buffer.from(state || '', 'base64').toString());
       siteUrl = stateObj.siteUrl || '';
     } catch {}
 
-    // Return HTML page that stores tokens in localStorage and redirects
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(`<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Conectando…</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #1a1a1a; color: #fff;
-           display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .box { text-align: center; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #E8610A;
-               border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    p { color: #888; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <div class="spinner"></div>
-    <p>Guardando credenciales…</p>
-  </div>
-  <script>
-    try {
-      localStorage.setItem('g_rt', ${JSON.stringify(tokens.refresh_token)});
-      ${siteUrl ? `localStorage.setItem('g_site', ${JSON.stringify(siteUrl)});` : ''}
-    } catch(e) {
-      console.error('localStorage error', e);
-    }
-    // Redirect to dashboard with discover step
-    window.location.href = '/?step=discover';
-  </script>
-</body>
-</html>`);
+    // Store refresh token in a secure httpOnly cookie — never exposed to JS
+    const cookieValue = JSON.stringify({ rt: tokens.refresh_token });
+    const cookieParts = [
+      `${COOKIE_NAME}=${encodeURIComponent(cookieValue)}`,
+      'Path=/',
+      'HttpOnly',
+      'SameSite=Lax',
+      'Max-Age=31536000', // 1 year
+    ];
+    if (isSecure) cookieParts.push('Secure');
+    res.setHeader('Set-Cookie', cookieParts.join('; '));
+
+    // Pass site URL via query param so the frontend can pre-fill the URL input
+    const redirectTo = siteUrl
+      ? `/?step=discover&site=${encodeURIComponent(siteUrl)}`
+      : '/?step=discover';
+
+    return res.redirect(302, redirectTo);
 
   } catch (err) {
     return res.status(500).send(errorPage(

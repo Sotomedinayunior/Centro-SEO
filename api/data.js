@@ -1,16 +1,29 @@
 /**
  * api/data.js
- * GET /api/data
+ * GET /api/data?gsc=<property>&gmb=<location>&ga4=<property>
  *
- * Fetches GSC + GMB + GA4 data using server-side environment variables.
- * No login required — all credentials live in Vercel env vars.
+ * SaaS mode: reads the user's refresh token from the httpOnly cookie
+ * set by /api/callback. The GSC/GMB/GA4 properties are passed as query
+ * params (stored in the user's localStorage after the setup wizard).
  *
- * Required env vars:
- *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
- *   GSC_PROPERTY  (e.g. https://nellyrac.do/)
- *   GA4_PROPERTY_ID (e.g. properties/341199344)
+ * Required env vars (platform-level, not per-user):
+ *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
  */
 const { google } = require('googleapis');
+
+const COOKIE_NAME = 'g_session';
+
+function getRefreshToken(req) {
+  const raw = req.headers.cookie || '';
+  for (const part of raw.split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k.trim() === COOKIE_NAME) {
+      try { return JSON.parse(decodeURIComponent(v.join('='))).rt || null; }
+      catch { return null; }
+    }
+  }
+  return null;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -21,19 +34,23 @@ module.exports = async function handler(req, res) {
 
   const clientId     = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-  const gscProperty  = process.env.GSC_PROPERTY;
-  const ga4Property  = process.env.GA4_PROPERTY_ID || null;
-  const gmbLocation  = process.env.GMB_LOCATION_NAME || null;
 
   if (!clientId || !clientSecret) {
     return res.status(500).json({ error: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET no configurados en Vercel' });
   }
+
+  // Per-user credentials from cookie + query params
+  const refreshToken = getRefreshToken(req);
   if (!refreshToken) {
-    return res.status(500).json({ error: 'GOOGLE_REFRESH_TOKEN no configurado en Vercel' });
+    return res.status(401).json({ error: 'not_authenticated', message: 'Sesión no encontrada. Inicia sesión.' });
   }
+
+  const gscProperty = req.query.gsc || null;
+  const gmbLocation = req.query.gmb || null;
+  const ga4Property = req.query.ga4 || null;
+
   if (!gscProperty) {
-    return res.status(500).json({ error: 'GSC_PROPERTY no configurado en Vercel' });
+    return res.status(400).json({ error: 'Parámetro gsc requerido. Completa el setup del dashboard.' });
   }
 
   const auth = new google.auth.OAuth2(clientId, clientSecret);

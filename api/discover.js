@@ -1,12 +1,26 @@
 /**
  * api/discover.js
  * POST /api/discover
- * Body: { refreshToken }
  *
- * Returns all GSC properties and GMB locations for the authenticated user.
- * Called during setup to let the user pick their property.
+ * Returns all GSC properties, GMB locations and GA4 properties for the
+ * authenticated user. Reads the refresh token from the httpOnly cookie
+ * set by /api/callback — no token needed in the request body.
  */
 const { google } = require('googleapis');
+
+const COOKIE_NAME = 'g_session';
+
+function getRefreshToken(req) {
+  const raw = req.headers.cookie || '';
+  for (const part of raw.split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k.trim() === COOKIE_NAME) {
+      try { return JSON.parse(decodeURIComponent(v.join('='))).rt || null; }
+      catch { return null; }
+    }
+  }
+  return null;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -14,8 +28,8 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { refreshToken } = req.body || {};
-  if (!refreshToken) return res.status(400).json({ error: 'refreshToken requerido' });
+  const refreshToken = getRefreshToken(req);
+  if (!refreshToken) return res.status(401).json({ error: 'No autenticado. Inicia sesión primero.' });
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     return res.status(500).json({ error: 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET no configurados en Vercel' });

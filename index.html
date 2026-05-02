@@ -660,9 +660,10 @@ html,body{overflow-x:hidden;width:100%}
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="9" r="5.5"/><path d="M8 9 L11 5" stroke-linecap="round"/><circle cx="8" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg>
   PageSpeed
   </div>
-  <div class="nav-item" data-page="serp" onclick="showPage('serp',this)">
+  <div class="nav-item" data-page="serp" onclick="showPage('serp',this)" style="opacity:0.55">
   <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v1.5H2zM2 7h9v1.5H2zM2 11h6v1.5H2z"/></svg>
   SERP & Posiciones
+  <span style="font-size:8px;background:#2a2a2a;color:#888;border-radius:3px;padding:1px 5px;margin-left:auto;letter-spacing:0.3px">Pronto</span>
   </div>
   <div class="nav-item" data-page="onpage" onclick="showPage('onpage',this)">
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5 5h6M5 7.5h6M5 10h4" stroke-linecap="round"/></svg>
@@ -685,9 +686,10 @@ html,body{overflow-x:hidden;width:100%}
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12 C3 8 5 10 7 7 C9 4 11 6 15 2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 14h14" stroke-linecap="round" opacity="0.3"/></svg>
   Google Trends
   </div>
-  <div class="nav-item" data-page="aiplan" onclick="showPage('aiplan',this)">
+  <div class="nav-item" data-page="aiplan" onclick="showPage('aiplan',this)" style="opacity:0.55">
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 C5 1.5 3 3.5 3 6c0 1.5 0.7 2.8 1.8 3.6L4.5 12h7l-0.3-2.4C12.3 8.8 13 7.5 13 6c0-2.5-2-4.5-5-4.5z"/><path d="M5.5 12.5 v1 a2.5 2.5 0 0 0 5 0 v-1" stroke-linecap="round"/></svg>
   Plan IA
+  <span style="font-size:8px;background:#2a2a2a;color:#888;border-radius:3px;padding:1px 5px;margin-left:auto;letter-spacing:0.3px">Pronto</span>
   </div>
   <div class="nav-item" data-page="experiments" onclick="showPage('experiments',this)">
   <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/><path d="M4.22 4.22l1.42 1.42M10.36 10.36l1.42 1.42M4.22 11.78l1.42-1.42M10.36 5.64l1.42-1.42"/></svg>
@@ -707,7 +709,24 @@ html,body{overflow-x:hidden;width:100%}
   <div class="sidebar-period" id="sidebar-status">
   <strong>Cargando…</strong>
   </div>
-  <span class="sidebar-reset" onclick="location.reload()" title="Recargar datos"> Actualizar datos</span>
+  <div style="display:flex;gap:6px;margin-top:8px">
+  <span class="sidebar-reset" onclick="location.reload()" title="Recargar datos" style="flex:1">↺ Actualizar</span>
+  <span class="sidebar-reset" onclick="toggleProjectSettings()" title="Ajustes del proyecto" style="cursor:pointer">⚙</span>
+  <span class="sidebar-reset" onclick="resetSetup()" title="Cerrar sesión" style="color:#f87171;cursor:pointer">⏻</span>
+  </div>
+  </div>
+
+  <!-- Mini panel de ajustes — solo nombre (logo viene del dominio automáticamente) -->
+  <div id="project-settings-panel" style="display:none;position:fixed;bottom:70px;left:10px;width:220px;background:#1e1e1e;border:1px solid #333;border-radius:12px;padding:16px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#666;margin-bottom:10px">Nombre del proyecto</div>
+  <input id="settings-name-input" type="text" maxlength="40" placeholder="Nombre del proyecto"
+    style="width:100%;padding:8px 10px;font-size:13px;font-family:inherit;background:#2a2a2a;border:1px solid #333;border-radius:6px;color:#fff;outline:none;box-sizing:border-box;margin-bottom:10px"
+    onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='#333'"
+    onkeydown="if(event.key==='Enter')saveProjectSettings()">
+  <div style="display:flex;gap:8px">
+    <button onclick="saveProjectSettings()" style="flex:1;padding:7px;background:var(--orange);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Guardar</button>
+    <button onclick="toggleProjectSettings()" style="padding:7px 10px;background:#2a2a2a;color:#888;border:1px solid #333;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
+  </div>
   </div>
 </aside>
 
@@ -1307,7 +1326,7 @@ html,body{overflow-x:hidden;width:100%}
   <div class="page-header">
   <div>
   <div class="page-title">Auditoría SEO</div>
-  <div class="page-sub">Redirecciones, errores 404 y velocidad · nellyrac.do</div>
+  <div class="page-sub">Redirecciones, errores 404 y velocidad de tu sitio</div>
   </div>
   <button id="audit-run-btn" onclick="runAudit()" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff)">
   Ejecutar Crawl
@@ -1347,7 +1366,7 @@ html,body{overflow-x:hidden;width:100%}
   <div id="audit-status" class="card" style="text-align:center;padding:40px;color:var(--text2)">
   <div style="font-size:32px;margin-bottom:12px"></div>
   <div style="font-size:15px;font-weight:600;color:var(--text)">Listo para auditar</div>
-  <div style="font-size:13px;margin-top:6px">Presiona "Ejecutar Crawl" para analizar las 18 páginas de nellyrac.do</div>
+  <div style="font-size:13px;margin-top:6px">Presiona "Ejecutar Crawl" para analizar las páginas de tu sitio</div>
   </div>
 
   <!-- Filters -->
@@ -1923,9 +1942,16 @@ html,body{overflow-x:hidden;width:100%}
   <div class="page-header">
   <div>
   <div class="page-title"> Plan de Acción IA</div>
-  <div class="page-sub">Análisis inteligente con Claude · Recomendaciones priorizadas para Nelly RAC</div>
+  <div class="page-sub">Análisis inteligente con Claude · Recomendaciones priorizadas</div>
   </div>
-  <button class="run-btn" id="aiplan-run-btn" onclick="runAIPlan()"> Generar Plan</button>
+  </div>
+  <!-- Coming soon banner -->
+  <div style="background:var(--darkbg);border-radius:var(--radius);padding:40px;text-align:center;margin-bottom:24px;border:1px solid #2a2a2a">
+  <div style="font-size:36px;margin-bottom:12px">🤖</div>
+  <div style="font-family:var(--ffc);font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">Plan de Acción IA — Próximamente</div>
+  <div style="font-size:14px;color:#666;max-width:420px;margin:0 auto;line-height:1.7">
+    Claude analizará tus datos de SEO, Analytics y reseñas para generar recomendaciones priorizadas y accionables, escritas en lenguaje directo.
+  </div>
   </div>
 
   <!-- Data sources selector -->
@@ -2097,9 +2123,16 @@ html,body{overflow-x:hidden;width:100%}
   <div class="page-header">
   <div>
   <div class="page-title">SERP & Posiciones Google</div>
-  <div class="page-sub">Checker de posiciones en Google · Requiere SERPAPI_KEY</div>
+  <div class="page-sub">Checker de posiciones en Google</div>
   </div>
-  <button class="run-btn" id="serp-run-btn" onclick="runSerp()"> Verificar Posiciones</button>
+  </div>
+  <!-- Coming soon banner -->
+  <div style="background:var(--darkbg);border-radius:var(--radius);padding:40px;text-align:center;margin-bottom:24px;border:1px solid #2a2a2a">
+  <div style="font-size:36px;margin-bottom:12px">🔍</div>
+  <div style="font-family:var(--ffc);font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">SERP Checker — Próximamente</div>
+  <div style="font-size:14px;color:#666;max-width:400px;margin:0 auto;line-height:1.7">
+    Esta función permitirá verificar en qué posición aparece tu sitio en Google para las palabras clave más importantes, con datos en tiempo real.
+  </div>
   </div>
 
   <!-- Custom keywords input -->
@@ -2302,11 +2335,122 @@ html,body{overflow-x:hidden;width:100%}
 
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════
+     SETUP OVERLAY — shown to unauthenticated or unconfigured users
+     Hidden by default; bootDashboard() decides when to show it.
+════════════════════════════════════════════════════════════════ -->
+<div id="setup-overlay" style="display:none">
+  <div class="setup-card">
+    <div class="setup-logo">
+      <svg width="38" height="38" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 10px">
+        <path d="M12 62 C12 62 4 45 22 30 C34 20 44 28 46 38 C48 48 40 56 34 50 C28 44 34 34 42 36 C50 38 54 48 50 56 C46 64 36 68 24 64" stroke="#E8610A" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M46 38 C48 28 58 18 72 20 C84 22 88 34 84 44 C80 54 70 56 64 50 C58 44 64 34 72 36 C80 38 82 48 78 56" stroke="#E8610A" stroke-width="6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="setup-logo-text">Growth Dashboard</div>
+      <div class="setup-logo-sub">Conecta tu sitio en minutos</div>
+    </div>
+
+    <!-- Progress dots -->
+    <div class="setup-steps">
+      <div class="setup-step-dot active" id="dot-1"></div>
+      <div class="setup-step-dot" id="dot-2"></div>
+      <div class="setup-step-dot" id="dot-3"></div>
+    </div>
+
+    <!-- Global error -->
+    <div class="setup-error" id="setup-error"></div>
+
+    <!-- ── STEP 1: Enter site URL ── -->
+    <div class="setup-step visible" id="step-1">
+      <div class="setup-label">Paso 1 de 3</div>
+      <div class="setup-title">Tu proyecto</div>
+      <div class="setup-desc">Ingresa la URL de tu sitio y confirma el nombre del proyecto.</div>
+
+      <!-- URL -->
+      <div class="setup-input-wrap">
+        <span class="setup-input-icon">🌐</span>
+        <input class="setup-input" id="setup-url-input" type="text" placeholder="ej: misitioweb.com" autocomplete="off" spellcheck="false">
+      </div>
+
+      <!-- Preview con logo automático del dominio -->
+      <div class="setup-preview" id="setup-preview">
+        <img class="setup-favicon" id="setup-favicon" src="" alt="">
+        <div>
+          <div class="setup-site-name" id="setup-site-name-preview"></div>
+          <div class="setup-site-url" id="setup-site-url-preview"></div>
+        </div>
+      </div>
+
+      <!-- Nombre editable (aparece cuando hay URL válida) -->
+      <div id="setup-extras" style="display:none;margin-bottom:20px">
+        <div class="setup-label" style="margin-bottom:6px">Nombre del proyecto</div>
+        <div class="setup-input-wrap" style="margin-bottom:0">
+          <span class="setup-input-icon" style="font-size:15px">✏️</span>
+          <input class="setup-input" id="setup-name-input" type="text" placeholder="ej: Mi Empresa" autocomplete="off" maxlength="40">
+        </div>
+      </div>
+
+      <button class="setup-btn" onclick="goStep2()">Continuar →</button>
+    </div>
+
+    <!-- ── STEP 2: Connect Google ── -->
+    <div class="setup-step" id="step-2">
+      <div class="setup-label">Paso 2 de 3</div>
+      <div class="setup-title">Conecta tu cuenta Google</div>
+      <div class="setup-desc">Autoriza acceso a Google Search Console y Google My Business para ver tus datos reales en tiempo real.</div>
+      <div class="setup-preview" id="setup-preview-2" style="display:flex;margin-bottom:24px">
+        <img class="setup-favicon" id="setup-favicon-2" src="" alt="">
+        <div>
+          <div class="setup-site-name" id="setup-site-name-2"></div>
+          <div class="setup-site-url" id="setup-site-url-2"></div>
+        </div>
+      </div>
+      <button class="setup-btn" onclick="connectGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0">
+          <path fill="#fff" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+          <path fill="#fff" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+          <path fill="#fff" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+          <path fill="#fff" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
+        </svg>
+        Iniciar sesión con Google
+      </button>
+      <button class="setup-btn setup-btn-secondary" onclick="goStep1()">← Volver</button>
+    </div>
+
+    <!-- ── STEP 3: Select properties ── -->
+    <div class="setup-step" id="step-3">
+      <div class="setup-label">Paso 3 de 3</div>
+      <div class="setup-title">Selecciona tus propiedades</div>
+      <div class="setup-desc">Elige las propiedades de Google que quieres monitorear.</div>
+
+      <div class="setup-section-label">Google Search Console *</div>
+      <div class="setup-property-list" id="gsc-list">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px;color:#666;font-size:13px">
+          <div class="setup-spinner"></div>&nbsp;Buscando propiedades…
+        </div>
+      </div>
+
+      <div id="gmb-section" style="display:none">
+        <div class="setup-section-label">Google My Business</div>
+        <div class="setup-property-list" id="gmb-list"></div>
+      </div>
+
+      <div id="ga4-section" style="display:none">
+        <div class="setup-section-label">Google Analytics 4</div>
+        <div class="setup-property-list" id="ga4-list"></div>
+      </div>
+
+      <button class="setup-btn" id="btn-finish" onclick="finishSetup()" disabled>Acceder al dashboard →</button>
+      <div class="setup-skip" onclick="resetSetup()">Cerrar sesión y empezar de nuevo</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const O='#E8610A',OL='#F9A36A',DK='#3A3A3A',BL='#378ADD',GR='#27a663',MU='#999',BG='rgba(232,97,10,0.08)';
 
-// Local storage keys 
-const LS = { rt:'g_rt', site:'g_site', gsc:'g_gsc', gmb:'g_gmb', name:'g_name', ga4:'g_ga4', pid:'g_pid' };
+// Local storage keys (refresh token lives in httpOnly cookie, NOT here)
+const LS = { site:'g_site', gsc:'g_gsc', gmb:'g_gmb', name:'g_name', ga4:'g_ga4', pid:'g_pid' };
 const ls = { get: k => localStorage.getItem(k), set: (k,v) => localStorage.setItem(k,v), del: k => localStorage.removeItem(k) };
 
 // Site config (derived from localStorage) 
@@ -2348,15 +2492,21 @@ function goStep2() {
   const raw = document.getElementById('setup-url-input').value.trim();
   const url = raw.startsWith('http') ? raw : 'https://'+raw;
   try { new URL(url); } catch { return showSetupError('URL inválida. Ej: https://dualsym.com'); }
-  clearSetupError(); ls.set(LS.site, url);
+  clearSetupError();
+  ls.set(LS.site, url);
+  // Save custom name (or derive from URL)
+  const nameInput = document.getElementById('setup-name-input');
+  const customName = nameInput?.value.trim() || nameFromUrl(url);
+  ls.set(LS.name, customName);
   ['step-1','step-2','step-3'].forEach(id=>document.getElementById(id).classList.remove('visible'));
   document.getElementById('step-2').classList.add('visible');
   document.getElementById('dot-1').className='setup-step-dot done';
   document.getElementById('dot-2').className='setup-step-dot active';
-  const name=nameFromUrl(url), domain=new URL(url).hostname;
-  const fav=`https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-  el('setup-site-name-2',name); el('setup-site-url-2',domain);
-  const f2=document.getElementById('setup-favicon-2'); if(f2) f2.src=fav;
+  const domain = new URL(url).hostname;
+  const f2 = document.getElementById('setup-favicon-2');
+  if (f2) f2.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  el('setup-site-name-2', customName);
+  el('setup-site-url-2', domain);
   document.getElementById('setup-preview-2').classList.add('visible');
 }
 function connectGoogle() {
@@ -2364,15 +2514,19 @@ function connectGoogle() {
   window.location.href='/api/auth?site='+encodeURIComponent(url);
 }
 async function runDiscoverStep() {
-  const rt=ls.get(LS.rt); if(!rt){goStep1();return;}
+  // Token is in the httpOnly cookie — no need to pass it in the body
   ['step-1','step-2','step-3'].forEach(id=>document.getElementById(id).classList.remove('visible'));
   document.getElementById('step-3').classList.add('visible');
   document.getElementById('dot-1').className='setup-step-dot done';
   document.getElementById('dot-2').className='setup-step-dot done';
   document.getElementById('dot-3').className='setup-step-dot active';
   try {
-  const r=await fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:rt})});
-  const data=await r.json(); if(!r.ok) throw new Error(data.error||'Error');
+  const r=await fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+  const data=await r.json();
+  if(!r.ok) {
+    if(r.status===401){goStep1();showSetupError('Sesión expirada. Inicia sesión de nuevo.');return;}
+    throw new Error(data.error||'Error');
+  }
   buildGSCList(data.gscProperties||[]); buildGMBList(data.gmbLocations||[]); buildGA4List(data.ga4Properties||[]);
   } catch(e) { showSetupError('Error al descubrir propiedades: '+e.message); }
 }
@@ -2429,65 +2583,122 @@ function finishSetup(){
   if(!selectedGSC){showSetupError('Selecciona una propiedad de Search Console');return;}
   ls.set(LS.gsc,selectedGSC); if(selectedGMB) ls.set(LS.gmb,selectedGMB); else ls.del(LS.gmb);
   if(selectedGA4) ls.set(LS.ga4,selectedGA4); else ls.del(LS.ga4);
-  ls.set(LS.name,nameFromUrl(ls.get(LS.site)||selectedGSC));
+  // Keep the name set in step-1; fallback only if empty
+  if(!ls.get(LS.name)) ls.set(LS.name, nameFromUrl(ls.get(LS.site)||selectedGSC));
   history.replaceState({},'','/'); bootDashboard();
 }
-function resetSetup(){[LS.rt,LS.site,LS.gsc,LS.gmb,LS.name,LS.ga4,LS.pid].forEach(k=>ls.del(k));window.location.reload();}
+function resetSetup(){[LS.site,LS.gsc,LS.gmb,LS.name,LS.ga4,LS.pid].forEach(k=>ls.del(k));window.location.href='/api/logout';}
 function showSetupError(msg){const e=document.getElementById('setup-error');if(e){e.textContent=msg;e.classList.add('visible');}}
 function clearSetupError(){const e=document.getElementById('setup-error');if(e)e.classList.remove('visible');}
 
-// URL input preview (step 1) 
+// ── Project settings panel (sidebar) ──────────────────────────
+function toggleProjectSettings() {
+  const panel = document.getElementById('project-settings-panel');
+  if (!panel) return;
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  if (open) {
+    const ni = document.getElementById('settings-name-input');
+    if (ni) { ni.value = ls.get(LS.name) || ''; ni.focus(); }
+  }
+}
+
+function saveProjectSettings() {
+  const ni = document.getElementById('settings-name-input');
+  const newName = ni?.value.trim();
+  if (newName) ls.set(LS.name, newName);
+  toggleProjectSettings();
+  applyStoredConfig(); // Actualiza sidebar + title al instante
+}
+
+// URL input preview (step 1)
+// Logo se toma automáticamente del dominio via Google Favicons — sin subida de archivos.
 function initURLInput() {
-  const input=document.getElementById('setup-url-input'), preview=document.getElementById('setup-preview');
-  if(!input) return;
-  input.addEventListener('input',()=>{
-  const raw=input.value.trim(); if(!raw){preview.classList.remove('visible');return;}
-  const url=raw.startsWith('http')?raw:'https://'+raw;
-  try{
-  const domain=new URL(url).hostname, name=nameFromUrl(url);
-  el('setup-site-name-preview',name); el('setup-site-url-preview',domain);
-  const img=document.getElementById('setup-favicon'); if(img) img.src=`https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-  preview.classList.add('visible');
-  }catch{preview.classList.remove('visible');}
+  const input     = document.getElementById('setup-url-input');
+  const preview   = document.getElementById('setup-preview');
+  const extras    = document.getElementById('setup-extras');
+  const nameInput = document.getElementById('setup-name-input');
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    const raw = input.value.trim();
+    if (!raw) {
+      preview.classList.remove('visible');
+      if (extras) extras.style.display = 'none';
+      return;
+    }
+    const url = raw.startsWith('http') ? raw : 'https://' + raw;
+    try {
+      const domain = new URL(url).hostname;
+      const name   = nameFromUrl(url);
+      el('setup-site-name-preview', name);
+      el('setup-site-url-preview', domain);
+      const favicon = document.getElementById('setup-favicon');
+      if (favicon) favicon.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+      preview.classList.add('visible');
+      if (extras) extras.style.display = 'block';
+      // Pre-fill name only if the user hasn't typed one yet
+      if (nameInput && !nameInput._touched) nameInput.value = name;
+    } catch {
+      preview.classList.remove('visible');
+      if (extras) extras.style.display = 'none';
+    }
   });
-  input.addEventListener('keydown',e=>{if(e.key==='Enter')goStep2();});
-  const stored=ls.get(LS.site); if(stored){input.value=stored;input.dispatchEvent(new Event('input'));}
+
+  // Mark name as manually touched so we stop auto-filling
+  if (nameInput) nameInput.addEventListener('input', () => { nameInput._touched = true; });
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') goStep2(); });
+
+  // Restore stored values on re-open
+  const storedSite = ls.get(LS.site);
+  const storedName = ls.get(LS.name);
+  if (storedSite) { input.value = storedSite; input.dispatchEvent(new Event('input')); }
+  if (storedName && nameInput) { nameInput.value = storedName; nameInput._touched = true; }
 }
 
 // Apply stored config to dashboard UI 
 function applyStoredConfig() {
-  const name = 'Nelly RAC';
-  const site = 'https://nellyrac.do';
-  SITE_CONFIG = { siteName: name, siteUrl: site, gscProperty: site+'/', configured: true, gmbConfigured: true };
-  el('logo-site-name', 'Nelly RAC');
-  document.getElementById('page-title').textContent = 'Nelly RAC — Growth Dashboard';
-  // overview-badge hidden by design
+  const gsc  = ls.get(LS.gsc) || '';
+  const site = ls.get(LS.site) || gsc;
+  const name = ls.get(LS.name) || nameFromUrl(site) || 'Mi Sitio';
+  const gmbConfigured = !!ls.get(LS.gmb);
+  const configured    = !!gsc;
+  SITE_CONFIG = { siteName: name, siteUrl: site, gscProperty: gsc, configured, gmbConfigured };
+  el('logo-site-name', name);
+  document.getElementById('page-title').textContent = name + ' — Growth Dashboard';
+  let domain = '—';
+  try { domain = site ? new URL(site).hostname : '—'; } catch {}
   const sb = document.getElementById('sidebar-status');
-  if (sb) sb.innerHTML = `<strong>${name}</strong> nellyrac.do`;
+  if (sb) sb.innerHTML = `<strong>${name}</strong><br><span style="color:#555;font-size:10px">${domain}</span>`;
   try {
-    const logoWrap = document.querySelector('.logo-wrap');
-    if (logoWrap) {
-      const img = document.createElement('img');
-      img.src = `https://www.google.com/s2/favicons?domain=nellyrac.do&sz=64`;
-      img.style.cssText = 'width:32px;height:32px;border-radius:6px;object-fit:contain;flex-shrink:0';
-      img.onerror = () => img.remove(); // si falla, deja el SVG intacto
-      // Insertar delante del SVG existente (si ya hay img previa, no duplicar)
-      const existingImg = logoWrap.querySelector('img');
-      const svg = logoWrap.querySelector('svg');
-      if (!existingImg && svg) {
-        svg.replaceWith(img);
-      } else if (!existingImg) {
-        logoWrap.prepend(img);
+    if (domain !== '—') {
+      const logoWrap = document.querySelector('.logo-wrap');
+      if (logoWrap) {
+        let img = logoWrap.querySelector('img');
+        if (!img) {
+          img = document.createElement('img');
+          img.style.cssText = 'width:32px;height:32px;border-radius:6px;object-fit:contain;flex-shrink:0';
+          img.onerror = () => img.remove();
+          const svg = logoWrap.querySelector('svg');
+          if (svg) svg.replaceWith(img); else logoWrap.prepend(img);
+        }
+        img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
       }
     }
   } catch {}
 }
 
-// Load data via POST /api/data 
+// Load data — passes user's properties as query params; token is in the httpOnly cookie
 async function loadData() {
   const empty={...FALLBACK,gmb:{configured:false,rating:null,reviewCount:null,reviews:[],performance:{views:{maps:null,search:null,total:null},actions:{calls:null,websiteClicks:null,directions:null,total:null},daily:[]}},ga4:null};
   try{
-  const r=await fetch('/api/data');
+  const params = new URLSearchParams();
+  const gsc = ls.get(LS.gsc); if(gsc) params.set('gsc', gsc);
+  const gmb = ls.get(LS.gmb); if(gmb) params.set('gmb', gmb);
+  const ga4 = ls.get(LS.ga4); if(ga4) params.set('ga4', ga4);
+  const r=await fetch('/api/data?' + params.toString());
+  if(r.status===401){window.location.href='/api/logout';return empty;}
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.status);}
   const json=await r.json();
   console.log('[loadData] /api/data OK — ga4 configured:', json?.ga4?.configured, '| ga4 keys:', Object.keys(json?.ga4||{}));
@@ -3129,7 +3340,7 @@ function render(D) {
   const upd = D.meta?.updated_at || '—';
   const sb = document.getElementById('sidebar-status');
   if (sb) sb.innerHTML =
-  `<strong>${SITE_CONFIG.siteName || 'Nelly RAC'}</strong><br>` +
+  `<strong>${SITE_CONFIG.siteName || 'Mi Sitio'}</strong><br>` +
   (SITE_CONFIG.siteUrl ? SITE_CONFIG.siteUrl.replace(/^https?:\/\//,'')+'<br>' : '') +
   `GSC · ${s.days || 0} días · ${(s.total_clicks||0).toLocaleString()} clics`;
 
@@ -5557,8 +5768,33 @@ function renderOnPageTable(rows) {
   </tr>`).join('');
 }
 
-// Boot 
+// Boot
 async function bootDashboard() {
+  // Handle redirect from /api/callback (?step=discover&site=...)
+  const urlParams = new URLSearchParams(window.location.search);
+  const stepParam = urlParams.get('step');
+  const siteParam = urlParams.get('site');
+  if (siteParam) ls.set(LS.site, decodeURIComponent(siteParam));
+  if (stepParam || siteParam) history.replaceState({}, '', '/');
+
+  // Check session (httpOnly cookie existence) via server endpoint
+  const sess = await fetch('/api/session').then(r => r.json()).catch(() => ({ loggedIn: false }));
+
+  if (!sess.loggedIn) {
+    // Not authenticated → show setup wizard from step 1
+    showSetup(); goStep1(); initURLInput();
+    return;
+  }
+
+  const hasGSC = !!ls.get(LS.gsc);
+  if (!hasGSC || stepParam === 'discover') {
+    // Authenticated but properties not selected yet → run discover
+    showSetup(); runDiscoverStep();
+    return;
+  }
+
+  // Fully configured → show dashboard
+  showApp();
   applyStoredConfig();
 
   // Only load GSC + GA4 data on startup (no SerpAPI calls)
